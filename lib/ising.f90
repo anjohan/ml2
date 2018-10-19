@@ -26,6 +26,24 @@ module mod_ising
             integer :: L
 
             L = size(s)
-            energy = s(1)*s(L) + dot_product(s(1:L-1), s(2:L))
+            energy = - (s(1)*s(L) + dot_product(s(1:L-1), s(2:L)))
         end function
+
+        subroutine create_ising_basis(basis, L)
+            class(coupling), allocatable, intent(out) :: basis(:)
+            integer, intent(in) :: L
+
+            integer :: i, j
+
+            allocate(basis(L**2))
+            do j = 1, L
+                do i = 1, L
+                    associate(s => basis((j-1)*L + i))
+                        s%i = i
+                        s%j = j
+                        s%L = L
+                    end associate
+                end do
+            end do
+        end subroutine
 end module
