@@ -1,3 +1,5 @@
+*.sqlite
+sources2.bib
 *.tif
 *.dat
 build/
