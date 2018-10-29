@@ -14,7 +14,7 @@ module mod_ising
         function eval(self, x) result(H)
             class(coupling), intent(in) :: self
             real(dp), intent(in) :: x(:)
-                ! Vectorised matrix of couplings, si * sj
+                ! Vectorised matrix of couplings, - si * sj
             real(dp) :: H
 
             H = x((self%j-1)*self%L + self%i)

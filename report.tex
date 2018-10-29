@@ -38,7 +38,7 @@
 \usepackage{microtype}
 \usepackage[font=normalsize]{subcaption}
 \usepackage{luacode}
-\usepackage[linktoc=all, bookmarks=true, pdfauthor={Anders Johansson},pdftitle={FYS-STK4155 Project 1}]{hyperref}
+\usepackage[linktoc=all, bookmarks=true, pdfauthor={Anders Johansson},pdftitle={FYS-STK4155 Project 2}]{hyperref}
 \usepackage{tikz,pgfplots,pgfplotstable}
 \usepgfplotslibrary{colorbrewer}
 \usepgfplotslibrary{external}
@@ -46,13 +46,14 @@
 \tikzexternalize%[prefix=tmp/, mode=list and make]
 \pgfplotsset{cycle list/Dark2}
 \pgfplotsset{compat=1.8}
+\pgfmathsetseed{12}
 \renewcommand{\CancelColor}{\color{red}}
 \let\oldexp=\exp
 \renewcommand{\exp}[1]{\mathrm{e}^{#1}}
 
 
 \labelformat{section}{#1}
-\labelformat{subsection}{exercise~#1}
+\labelformat{subsection}{section~#1}
 \labelformat{subsubsection}{paragraph~#1}
 \labelformat{equation}{equation~(#1)}
 \labelformat{figure}{figure~#1}
@@ -122,6 +123,7 @@
 
 %start
 \begin{document}
+\tikzexternaldisable
 \title{FYS-STK4155: Project 2}
 \author{Anders Johansson}
 %\maketitle
@@ -173,7 +175,485 @@ Binary classification of states as ordered or disordered is used as a classifica
 
 Consequently, the first part of this report derives the necessary mathemetical tools for both regression and classification, including the back propagation algorithm for training neural networks. Different methods for classification and regression are then applied to the Ising data provided in\cite{mehta} and compared.
 
+\section{Theory and methods}
+See~\vref{sec:linreg} for a review of linear regression, including terminology and regression problem statement.
+\subsection{The Ising model}
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[thick, >=latex]
+        \foreach \x in {1,2,...,14}{
+            \pgfmathsetmacro{\s}{random(0,1)}
+            \draw[->] (\x,\s) -- (\x,1-\s);
+        }
+    \end{tikzpicture}
+    \caption{Example of a spin configuration in the one-dimensional Ising model. Spins pointing up and down represent \(s=+1\) and \(s=-1\).}
+\end{figure}
+The Ising model is a model for the energy of a system of binary spins, e.g.\ spins which only can take values \(\pm 1\).
+Interactions are in this project assumed to be between nearest neighbours only, and the Hamiltonian is therefore given by
+\begin{equation}
+    H = -J\sum_{\ev{ij}} s_i s_j,
+\end{equation}
+where the sum runs over the nearest neighbours.
+In one dimension, this reduces to
+\begin{equation}
+    H = - J\sum_{k=1}^{L} s_k s_{k+1},
+\end{equation}
+where \(s_{L+1}=s_1\) in order to enforce periodic boundary conditions.
+According to the Boltzmann distribution, the probability of a state with energy \(H\) is proportional to \(\exp{-\beta H}\), where \(\beta=1/kT\) and \(T\) is the temperature.
+At low temperatures, states with a low energy, i.e.\ ordered states, are preferred, while the probability distribution flattens for large temperature. Therefore, an unordered state is more likely at higher temperatures. The transition between preferring ordered and unordered states is called a \emph{phase transition}. While no phase transition exists for the one-dimensional Ising model, the two-dimensional Ising model has a phase transition at \(kT/J=\num{2.27}\).
 
+\subsubsection{Regression problem}
+The performance of the different regression models can be evaluated on data created from the Ising model by ``forgetting'' the true model with a constant coupling coefficient \(J\) and assuming that it is non-constant,
+\begin{equation}
+    H = -\sum_{i, j}J_{ij} s_i s_j.
+\end{equation}
+Given a system with \(L\) spins, this gives \(L^2\) basis functions on the form \(-s_i s_j\) and \(L^2\) coefficients \(J_{ij}\) to be determined by regression to find an estimator of the energy of a spin configuration. Both linear regression methods and neural networks will be applied.
+
+\subsubsection{Classification problem}
+A dataset of two-dimensional spin configurations has been made available in~\cite{mehta}. These configurations have been created at different temperatures and are therefore labelled as either ordered or unordered. Logistic regression and neural networks can be used for this task.
+
+%  _             _     _   _
+% | | ___   __ _(_)___| |_(_) ___
+% | |/ _ \ / _` | / __| __| |/ __|
+% | | (_) | (_| | \__ \ |_| | (__
+% |_|\___/ \__, |_|___/\__|_|\___|
+%          |___/
+%  _ __ ___  __ _ _ __ ___  ___ ___(_) ___  _ __
+% | '__/ _ \/ _` | '__/ _ \/ __/ __| |/ _ \| '_ \
+% | | |  __/ (_| | | |  __/\__ \__ \ | (_) | | | |
+% |_|  \___|\__, |_|  \___||___/___/_|\___/|_| |_|
+%           |___/
+\subsection{Binary logistic regression}
+Binary logistic regression is applied to problems where there are two possible outcomes, e.g. \(y_i=1\) or \(y_i=0\). Given an input \(\vec{x}_i\) (for example a spin configuration), a logistic regressor gives as output the probability \(p_i\) that \(y_i=1\).
+The name logistic regression stems from the use of a logistic function as the value of \(p\), where the logistic function is applied to a linear combination of functions evaluated in the output, i.e.
+\begin{equation}
+    p_i = \frac{1}{1 + \exp{-\beta_j \phi_j(\vec{x}_i)}}.
+\end{equation}
+The matrix \(X\) consisting of \(X_{ij} = \phi_j(\vec{x}_i)\) can be created in the same manner as in linear regression, and the equation above is straightforwardly vectorised as
+\begin{equation}
+    \vec{p} = \frac{1}{1 + \exp{-X\vec{\beta}}}.
+\end{equation}
+
+\subsubsection{Cost function}
+If a given output \(y_i\) is \(1\), \(p_i\) gives the likelihood of this result as predicted by the logistic regressor. Similarly, if \(y_i=0\), \(1-p_i\) gives the likelihood. This can be combined into \(l_i = p_i^{y_i} \qty(1-p_i)^{1-y_i}\). The product rule gives the total likelihood,
+\begin{equation}
+    L = \prod_{i} l_i = \prod_{i} p_i^{y_i} \qty(1-p_i)^{1-y_i},
+\end{equation}
+which should be maximised by the logistic regressor. Since the logarithm is a strictly monotonous function, one can instead choose to maximise
+\begin{equation}
+    \ln(L) = \sum_i y_i \ln(p_i) + \qty(1-y_i)\ln(1-p_i),
+\end{equation}
+a much nicer expression to differentiate. Finally, this can be turned into a minimisation problem with a minus sign, giving the final cost function
+\begin{equation}
+    Q(\vec{\beta}) = -\sum_i \qty(y_i\ln(p_i) + \qty(1-y_i)\ln(1-p_i)),
+\end{equation}
+called the cross-entropy.
+
+\subsubsection{Minimisation}
+Letting \(t_i=X_{ij}\beta_j = \phi_j(\vec{x}_i)\beta_j\) and using the result
+\begin{equation}
+    \dv{x}(\frac{1}{1+\exp{-x}}) = \frac{\exp{-x}}{\qty(1-\exp{-x})^2}
+                                 = \frac{1 + \exp{-x} - 1}{\qty(1+\exp{-x})^2}
+                                 = \frac{1}{1+\exp{-x}} - \frac{1}{\qty(1+\exp{-x})^2}
+                                 = \frac{1}{1+\exp{-x}}\qty(1 - \frac{1}{1+\exp{-x}}),
+\end{equation}
+the derivative of the cost function is
+\begin{equation}
+    \pdv{Q}{\beta_k} = \pdv{Q}{p_j}\pdv{p_j}{\beta_k}
+                     = \pdv{Q}{p_j}\pdv{p_j}{t_l}\pdv{t_l}{\beta_k}
+                     = \sum_j \pdv{Q}{p_j}\pdv{p_j}{t_j}\pdv{t_j}{\beta_k}
+                     = \sum_j \pdv{Q}{p_j}p_j\qty(1-p_j)X_{jk}.
+\end{equation}
+Further,
+\begin{equation}
+    \pdv{Q}{p_j} = - \frac{y_j}{p_j} + \frac{1-y_j}{1-p_j}
+                 = \frac{-y_j\qty(1-p_j) + p_j\qty(1-y_j)}{p_j\qty(1-p_j)}
+                 = \frac{p_j - y_j}{p_j\qty(1-p_j)},
+\end{equation}
+giving
+\begin{equation}
+    \pdv{Q}{\beta_k} = \qty(p_j - y_j) X_{jk},
+\end{equation}
+or, in matrix form,
+\begin{equation}
+    \nabla_{\vec{\beta}} Q = X^T \qty(\vec{p} - \vec{y}),
+\end{equation}
+with \(\vec{p} = 1/\qty(1+\exp{-X\vec{\beta}})\).
+The equation \(\nabla Q = \vec{0}\) does not have an analytic solution, but it can be minimised with the standard minimisation methods.
+
+
+%                            _              _                      _
+% _ __   ___ _   _ _ __ __ _| |  _ __   ___| |___      _____  _ __| | _____
+%| '_ \ / _ \ | | | '__/ _` | | | '_ \ / _ \ __\ \ /\ / / _ \| '__| |/ / __|
+%| | | |  __/ |_| | | | (_| | | | | | |  __/ |_ \ V  V / (_) | |  |   <\__ \
+%|_| |_|\___|\__,_|_|  \__,_|_| |_| |_|\___|\__| \_/\_/ \___/|_|  |_|\_\___/
+\subsection{Neural networks}
+Neural networks can be used for both classification and regression.
+They aim to be more accurate than linear and logistic regression by using a more complex set of functions for approximation.
+A neural network is a series of affine transformations and activation functions, where the activation function may for example be a logistic function.
+
+Each pair of one affine transformation and activation function is called a \emph{layer}. The number of outputs from a layer is called the number of \emph{neurons} in the layer. Mathematically, layer number \(l\) contains a weight-matrix \(W^l\), a bias vector \(\vec{b}^l\) and an activation function \(f^l\), takes input \(\vec{a}^{l-1}\), applies the affine transformation \(\vec{z}^l = W^l \vec{a}^{l-1} + \vec{b}^l\) and returns the output \(f^l(\vec{z}^l)\).
+
+Prediction is done recursively. The first layer, called the input layer, applies its affine transformation to the input vector and then the activation function. The second layer receives the output of the first layer and repeats the process. This is repeated up to and including the final (output) layer, whose activation is tailored to either classification or regression.
+
+%      _             _               _   _
+%  ___| |_ ___   ___| |__   __ _ ___| |_(_) ___
+% / __| __/ _ \ / __| '_ \ / _` / __| __| |/ __|
+% \__ \ || (_) | (__| | | | (_| \__ \ |_| | (__
+% |___/\__\___/ \___|_| |_|\__,_|___/\__|_|\___| _
+%  _ __ ___ (_)_ __ (_)_ __ ___ (_)___  __ _| |_(_) ___  _ __
+% | '_ ` _ \| | '_ \| | '_ ` _ \| / __|/ _` | __| |/ _ \| '_ \
+% | | | | | | | | | | | | | | | | \__ \ (_| | |_| | (_) | | | |
+% |_| |_| |_|_|_| |_|_|_| |_| |_|_|___/\__,_|\__|_|\___/|_| |_|
+\subsection{Stochastic minimisation algorithms}
+See~\vref{subsec:min} for a review of gradient descent and Newton's method.
+
+Gradient descent and Newton's method are often suboptimal because of their tendency to get stuck in local minima.
+A simple extension is the stochastic batch-gradient descent, which selects batches of inputs from the training data with replacement and trains either a neural network or a logistic regressor on each batch. If \(b\) batches are chosen out of the \(N\) training data sets, there are \(N/b\) input items to be chosen with replacement for each batch, and the gradient descent update step is
+\begin{equation}
+    \vec{\beta}_{k+1} = \vec{\beta}_k - \alpha \nabla_{\vec{\beta}} Q\qty(X_{\qty[\vec{\imath},:]},\vec{y}_{\vec{\imath}}),
+\end{equation}
+where \(Q\qty(X_{\qty[\vec{\imath},:]},\vec{y}_{\vec{\imath}})\) denotes the gradient applied to \(\vec{x}_j\) for all \(j\in\vec{\imath}\), \(\vec{\imath}\) being a set of \(N/b\) indices.
+
+A further improvement is to add a so-called momentum, i.e.\ use a linear combination of the current and previous gradient rather than just using the current gradient,
+\begin{equation}
+    \vec{v}_{k} = \gamma \vec{v}_{k+1} + \alpha Q\qty(X_{\qty[\vec{\imath},:]},\vec{y}_{\vec{\imath}}), \qquad
+    \vec{\beta}_{k+1} = \vec{\beta}_k - \vec{v}_k.
+\end{equation}
+
+%                                   _ _
+%   __ _ _ __  _ __   ___ _ __   __| (_)_  __
+%  / _` | '_ \| '_ \ / _ \ '_ \ / _` | \ \/ /
+% | (_| | |_) | |_) |  __/ | | | (_| | |>  <
+%  \__,_| .__/| .__/ \___|_| |_|\__,_|_/_/\_\
+%       |_|   |_|
+\clearpage
+\appendix
+\addcontentsline{toc}{part}{Appendix}
+\renewcommand{\thesection}{\Alph{section}}
+\labelformat{section}{appendix~#1}
+\labelformat{subsection}{appendix~#1}
+
+\section{Review of linear regression}\label{sec:linreg}
+This section is mainly a copy-paste from project 1 and is included for reference.
+\subsection{Fitting problem statement}
+The general problem is to fit a given set of data \(D=\qty{(\vec{x}_i,y_i)}_{i=1}^N\), where \(\vec{x}_i\) are inputs of some dimensionality (\(2\) in this project) and \(y_i\) are scalar outputs.
+A set of basis functions \(\qty{\phi_j}_{j=1}^p\) is chosen, and the goal is to approximate the input data with the linear combination \(\beta_j \phi_j(\vec{x})\).
+If the data set were generated by such a linear combination, there would exist parameters \(\qty{\beta_j}\) such that \(\beta_j\phi_j(\vec{x}_i)=y_i\), which can be rewritten as the matrix equation
+\begin{equation}
+    X\vec{\beta} = \vec{y},
+\end{equation}
+where \(X\in\mathbb{R}^{N\times p}\) is the matrix with elements \(x_{ij}=\phi_j(\vec{x}_i)\), and \(\vec{\beta}\) and \(\vec{y}\) are the vectors with elements \(\beta_j\) and \(y_i\).
+
+In general, it will not be possible to find parameters \(\beta_j\) which fulfill this, since the data set will not be generated from the simple basis functions.
+Consequently, one must find the \(\beta_j\)s which in some sense make \(X\vec{\beta}\) as close to \(\vec{y}\) as possible.
+The way in which to measure deviation from the perfect solution is called the \emph{cost function}, frequently written \(Q(\vec{\beta};D)\).
+Regression methods differ in the choice of cost function, while their aim is always to find the parameters \(\beta_j\) which minimise the cost function.
+
+When a regression method has been used to find \(\vec{\beta}\), predicted values are denoted \(\tilde{y}_i = X_{ij}\beta_j\), while the original, exact values are denoted \(y_i\).
+
+%                _ _                          _                _
+%   ___  _ __ __| (_)_ __   __ _ _ __ _   _  | | ___  __ _ ___| |_
+%  / _ \| '__/ _` | | '_ \ / _` | '__| | | | | |/ _ \/ _` / __| __|
+% | (_) | | | (_| | | | | | (_| | |  | |_| | | |  __/ (_| \__ \ |_
+%  \___/|_|  \__,_|_|_| |_|\__,_|_|   \__, | |_|\___|\__,_|___/\__|
+%  ___  __ _ _   _  __ _ _ __ ___  ___|___/
+% / __|/ _` | | | |/ _` | '__/ _ \/ __|
+% \__ \ (_| | |_| | (_| | | |  __/\__ \
+% |___/\__, |\__,_|\__,_|_|  \___||___/
+%         |_|
+\subsection{Ordinary Least Squares}
+The ordinary least squares method is the simplest and most intuitive, since its cost function is simply the square of the error made by the fit,
+\begin{equation}
+    Q(\beta;D) = \norm{\vec{y}-X\vec{\beta}}_2^2,
+\end{equation}
+where \(\norm{\cdot}_p\) denotes the usual \(p\)-norm.
+
+\subsubsection{Geometric view}
+The geometric view of the equation \(X\vec{\beta}=\vec{y}\) is to find the linear combination of the columns of \(X\) equal to \(\vec{y}\).
+This is not necessarily possible if the columns of \(X\) do not span \(\mathbb{R}^N\), which is not possible if \(p<N\).
+Ordinary least squares seeks to find the linear combination of the columns of \(X\) as close to \(\vec{y}\) as possible.
+This is achieved when \(X\vec{\beta}\) is equal to the projection of \(\vec{y}\) onto the column space of \(X\), i.e.
+\begin{equation}
+    X\vec{\beta} = \Proj_{\Col{X}}{\vec{y}}.
+\end{equation}
+By construction, this equation will always have a solution, although it may not be unique if the columns of \(X\) are not linearly independent.
+Since \(X\vec{\beta}\) is the projection of \(\vec{y}\) onto the column space of \(X\), the error, \(\vec{y}-X\vec{\beta}\), is orthogonal to the columns of \(X\), i.e.\ the rows of \(X^T\).
+Consequently,
+\begin{equation}
+    X^T\qty(\vec{y}-X\vec{\beta}) = \vec{0}
+    \implies
+    X^T X \vec{\beta} = X^T \vec{y},\label{eq:olsnormal}
+\end{equation}
+which is a simple linear set of equations which can be solved for \(\vec{\beta}\).
+This set of equations is called the \emph{normal equations}.
+If \(X\) is non-singular, the minimisation problem in ordinary least squares has the closed form solution
+\begin{equation}
+    \vec{\beta}_{\text{OLS}} = \qty(X^T X)^{-1} X^T \vec{y}.
+\end{equation}
+
+\subsubsection{Minimisation view}
+The cost function for ordinary least squares can be written as
+\begin{equation}
+    Q(\beta;D) = \norm{\vec{y}-X\vec{\beta}}_2^2
+               = \sum_{i=1}^N \qty(y_i - X_{ij}\beta_j)^2.
+\end{equation}
+When this is minimised, \(\nabla Q = \vec{0}\), where the gradient denotes differentiation with respect to the parameters \(\beta_j\).
+The components of the gradient can straightforwardly be calculated from the cost function,
+\begin{equation}
+    \nabla_k Q = \pdv{\beta_k}(\qty(y_i - X_{ij}\beta_j)\qty(y_i - X_{ij}\beta_j))
+               = 2\qty(y_i-X_{ij}\beta_j) \pdv{\beta_k}(y_i-X_{ij}\beta_j)
+               = -2X_{ik}\qty(y_i-X_{ij}\beta_j),\label{eq:olsgradcomp}
+\end{equation}
+which can be rewritten on vector form as
+\begin{equation}
+    \nabla Q = -2X^T\qty(\vec{y}-X\vec{\beta}).\label{eq:olsgrad}
+\end{equation}
+Setting \(\nabla Q = \vec{0}\) gives~\vref{eq:olsnormal}.
+
+Ordinary least squares has been implemented by calling \lstinline{dgelss}, which uses a singular value decomposition to prevent numerical instabilities.
+
+%      _     _
+% _ __(_) __| | __ _  ___
+%| '__| |/ _` |/ _` |/ _ \
+%| |  | | (_| | (_| |  __/
+%|_|  |_|\__,_|\__, |\___|
+%              |___/
+\subsection{Ridge regression}
+The cost function used in Ridge regression is
+\begin{equation}
+    Q_\lambda(\vec{\beta};D) = \norm{\vec{y}-X\vec{\beta}}_2^2 + \lambda \norm{\vec{\beta}}_2^2
+                             = \sum_{i=1}^N \qty(y_i - X_{ij}\beta_j)^2 + \lambda\sum_{i=1}^p \beta_i^2,
+\end{equation}
+which penalises solution vectors \(\vec{\beta}\) where some coefficients are large.
+\(\lambda\) is a parameter which should be chosen with great care.
+The error is as small as possible for \(\lambda=0\), as this will reproduce the solution found by ordinary least squares, but a non-zero value of \(\lambda\) will give \(\beta_j\)s which yield more reasonable predictions for other values of \(\vec{x}\) than those contained in the training data set \(D\)\cite{mehta}.
+
+Using the derivative of the first term from~\vref{eq:olsgrad}, the gradient of the cost function is
+\begin{equation}
+    \nabla Q_\lambda = -2 X^T \qty(\vec{y}-X\vec{\beta}) + 2\lambda \vec{\beta}
+                     = -2 X^T \vec{y} + 2 X^T X \vec{\beta} + 2\lambda \vec{\beta}
+                     = -2 X^T \vec{y} + 2\qty(X^T X + \lambda I)\vec{\beta}.
+\end{equation}
+Minimisation requires \(\nabla Q_\lambda = \vec{0}\), which gives
+\begin{equation}
+    \qty(X^T X + \lambda I)\vec{\beta} = X^T \vec{y}.
+\end{equation}
+This can be solved for \(\vec{\beta}\), and the closed-form solution to the minimisation of the Ridge cost function is
+\begin{equation}
+    \vec{\beta}_\text{Ridge} = \qty(X^T X + \lambda I)^{-1} X^T \vec{y}.
+\end{equation}
+Having a non-zero \(\lambda\) clearly reduces problems with linearly dependent columns of \(X\) and singularity of \(X^T X\).
+
+Ridge regression has been implemented by calculating \(X^T X\) and adding \(\lambda\) on the diagonal, calculating \(X^T y\) and using \lstinline{dposv} to find \(\vec{\beta}\) using a Cholesky-decomposition, since \(X^T X + \lambda I\) is positive definite.
+
+% _
+%| | __ _ ___ ___  ___
+%| |/ _` / __/ __|/ _ \
+%| | (_| \__ \__ \ (_) |
+%|_|\__,_|___/___/\___/
+\subsection{LASSO regression}
+The cost function used in LASSO regression is
+\begin{equation}
+    Q_\lambda(\vec{\beta};D) = \norm{\vec{y}-X\vec{\beta}}_2^2 + \lambda \norm{\vec{\beta}}_1
+                             = \sum_{i=1}^N \qty(y_i - X_{ij}\beta_j)^2 + \lambda\sum_{i=1}^p \abs{\beta_i},
+\end{equation}
+which also penalises solution vectors \(\vec{\beta}\) where some coefficients are large.
+LASSO regression has the advantage that certain choices of \(\lambda\) will give a sparse solution, i.e. \(\beta_j=0\) for some values of \(j\)\cite{wieringen}.
+
+As with the other regression methods, the gradient of the cost function should now be differentiated and set to zero.
+Mathematicians will now point out that the absolute value is not differentiable at zero and start deriving ingenious minimisation methods to circumvent the problem.
+This is usually a non-issue in a physics course --- I will now \emph{define} the derivative to be
+\begin{equation}
+    \dv{\abs{x}}{x} \coloneqq \sgn{x} \coloneqq \begin{cases}1, & x > 0\\ 0, & x = 0 \\ -1, & x < 0 \end{cases}
+\end{equation}
+and proceed happily.
+
+The gradient of the cost function is thus
+\begin{equation}
+    \nabla Q_\lambda = -2 X^T \qty(\vec{y} - X\vec{\beta}) + \lambda \sgn\qty(\vec{\beta}),
+\end{equation}
+and \(\nabla Q_\lambda = \vec{0}\) does unfortunately not have a closed-form solution.
+A separate minimisation algorithm must therefore be used to find the parameters \(\beta_j\) which minimise the cost function.
+The calculated gradient can be put straight into the gradient descent algorithm with a suitable step length.
+Alternatively, Newton's method can be used with the second derivative (Hessian) matrix of the cost function.
+The second derivative of the absolute value is even more problematic, which is solved by setting it equal to zero.
+
+The Hessian matrix of the LASSO cost function is thus the same as the second derivative of the ordinary least squares cost function,
+\begin{equation}
+    H_{kl} = H_{lk} = \pdv{Q_\lambda}{\beta_l}{\beta_k}
+           = \pdv{\beta_l}(\nabla_k Q)
+           \,\husk{gradref}{=}\, \pdv{\beta_l}(-2X_{ik}\qty(y_i-X_{ij}\beta_j))
+           = 2X_{ik}X_{il},
+\tikz[>=latex,overlay,remember picture,thick]{\draw[<-,gronn] (gradref) .. controls ++(0,0.75) and ++(-1,0) .. ++(1,0.75) node[anchor=west] {\small\ref{eq:olsgradcomp}};}
+\end{equation}
+which is the component form of the matrix equation
+\begin{equation}
+    H = 2 X^T X.
+\end{equation}
+The gradient can now be rewritten as
+\begin{equation}
+    \nabla Q_\lambda = -2 X^T \vec{y} + H\vec{\beta} + \lambda \sgn\qty(\vec{\beta}).
+\end{equation}
+\Vref*{eq:newtonstep} in Newton's method can then transformed into
+\begin{equation}
+    H\qty(\vec{\beta}_{i+1} - \vec{\beta}_i) = 2X^T \vec{y}  - H\vec{\beta}_i - \lambda \sgn\qty(\vec{\beta}_i)
+    \implies H\vec{\beta}_{i+1} = 2X^T\vec{y} - \lambda \sgn\qty(\vec{\beta}_i). \label{eq:lassonewton}
+\end{equation}
+Since \(H=2X^T X\), this reduces to the normal equations of ordinary least squares (\vref*{eq:olsnormal}) in the case of \(\lambda=0\), as it should.
+
+Minimisation of the LASSO cost function has the benefit that the second derivative is independent of \(\vec{\beta}\).
+\(H\) can therefore be Cholesky-decomposed once, an \(\mathcal{O}\qty(p^3)\) operation, and the result can be used to solve the linear set of equations for each iteration, which is \(\mathcal{O}\qty(p^2)\) with a pre-Cholesky-decomposed matrix.
+The Cholesky-decomposition can be used instead of an LU-decomposition, reducing the number of floating point operations by a factor of two, because \(H=2X^T X\) is positive definite when \(X\) is non-singular.
+
+Evaluation of the gradient only involves matrix-vector products, which is also an \(\mathcal{O}\qty(p^2)\) operation.
+The minimisation can, therefore, be done with one initial \(\mathcal{O}\qty(p^3)\) and then only \(\mathcal{O}\qty(p^2)\) operations per iteration, while the more general problem requires both the construction and the Cholesky-decomposition of \(H\), an \(\mathcal{O}\qty(p^3)\) operation, for every single iteration.
+
+This implementation gives both good performance and accurate results for small values of \(\lambda\).
+Larger values, however, give rise to issues.
+The theory suggests that a large \(\lambda\) should force some of the parameters \(\beta_j\) to become zero, but the cost function is not differentiable, and certainly not double differentiable, when \(\beta_j\) is zero.
+Consequently, Newton's method struggles to converge when some \(\beta_j\)s are zero in the true minimum of the LASSO cost function.
+Smarter methods such as coordinate descent\cite{friedman} should therefore be used, as in e.g.\ scikit-learn.
+
+
+%           _       _           _           _   _
+% _ __ ___ (_)_ __ (_)_ __ ___ (_)___  __ _| |_(_) ___  _ __
+%| '_ ` _ \| | '_ \| | '_ ` _ \| / __|/ _` | __| |/ _ \| '_ \
+%| | | | | | | | | | | | | | | | \__ \ (_| | |_| | (_) | | | |
+%|_| |_| |_|_|_| |_|_|_| |_| |_|_|___/\__,_|\__|_|\___/|_| |_|
+\subsection{Minimisation methods}\label{subsec:min}
+The important step in a regression method, or indeed in any statistical learning method, is to minimise the cost function.
+Certain cost functions, such as those of ordinary least squares and Ridge regression, admit analytical closed-form solutions for the parameters \(\beta_j\) which minimise \(Q(\vec{\beta};D)\), while most methods, including LASSO regression and logistic regression, require usage of some general minimisation algorithm.
+
+\subsubsection{Newton's method}\label{subsubsec:newton}
+Since the gradient of the cost function, \(\nabla Q\), is a perfectly normal function from \(\mathbb{R}^p\) to \(\mathbb{R}^p\), it can be Taylor expanded around some point \(\vec{\beta}_0\).
+This Taylor expansion can then be evaluated at a point \(\vec{\beta}_0 + \delta\vec{\beta}\). To first order in \(\delta\vec{\beta}\),
+\begin{equation}
+    \nabla Q\qty(\vec{\beta}_0 + \delta\vec{\beta}) = \nabla Q\qty(\vec{\beta}_0) + H\qty(\vec{\beta}_0)\delta\vec{\beta},
+\end{equation}
+where \(H(\vec{\beta}_0)\) is the derivative of \(\nabla Q\), i.e.\ the Hessian of \(Q\), evaluated at \(\beta_0\).
+Given a guess \(\beta_0\) somewhere near the minimum of \(Q\), a better estimate can be found by solving for the \(\delta\vec{\beta}\) which makes \(\nabla Q(\vec{\beta}_0 + \delta\vec{\beta}) = \vec{0}\), i.e.
+\begin{equation}
+    H\qty(\vec{\beta}_0)\delta\vec{\beta} = -\nabla Q\qty(\vec{\beta}_0),
+\end{equation}
+and, in general, solving
+\begin{equation}
+    H\qty(\vec{\beta}_i)\delta\vec{\beta}_i = -\nabla Q\qty(\vec{\beta}_i),\label{eq:newtonstep}
+\end{equation}
+letting \(\vec{\beta}_{i+1} = \vec{\beta}_i + \delta\vec{\beta}_i\) and continuing the process until the method has converged sufficiently.
+The above equation is a simple linear set of equations.
+
+
+\subsubsection{Gradient descent}
+Evaluating the Hessian matrix and inverting it can sometimes be infeasible, for example due to poor time complexity or being woefully undefined.
+In such cases, one can replace the Hessian \(H\) with a number \(1/\alpha\).
+\Vref{eq:newtonstep} is then rewritten as
+\begin{equation}
+    \vec{\beta}_{i+1} = \vec{\beta_i} - \alpha \nabla Q\qty(\vec{\beta}_i),
+\end{equation}
+with a simple geometric interpretation:
+By going a small step in the opposite direction of the gradient, the value of the cost function will decrease and \(\vec{\beta}\) will approach the true minimum.
+A small step will guarantee convergence for a convex function at the cost of slow convergence, while a larger value may give faster convergence or not converge at all.
+
+%                   __
+%  _ __   ___ _ __ / _| ___  _ __ _ __ ___   __ _ _ __   ___ ___
+% | '_ \ / _ \ '__| |_ / _ \| '__| '_ ` _ \ / _` | '_ \ / __/ _ \
+% | |_) |  __/ |  |  _| (_) | |  | | | | | | (_| | | | | (_|  __/
+% | .__/ \___|_|  |_|  \___/|_|  |_| |_| |_|\__,_|_| |_|\___\___|
+% |_|
+\subsection{Performance of regression methods}
+While the cost function is minimised by all regression methods, its value is not particularly meaningful.
+In particular, the cost functions in Ridge and LASSO regression depend on the parameter \(\lambda\), and a measure independent of \(\lambda\) should be used to determine the optimal \(\lambda\).
+Other functions are therefore introduced to measure the performance of a given regression method and/or a choice of parameters.
+
+The simplest measure is the mean square error,
+\begin{equation}
+    \MSE\qty(\vec{\beta},D) = \frac{1}{N}\norm{\vec{y}-\vec{\tilde{y}}}_2^2 = \frac{1}{N} \sum_{i=1}^N \qty(y_i - \tilde{y}_i)^2,
+\end{equation}
+which should be as small as possible. Another measure is the \(R^2\) score, defined as
+\begin{equation}
+    R^2(\vec{\beta},D) = 1 - \frac{\norm{\vec{y} - \vec{\tilde{y}}}_2^2}{\norm{\vec{y} - \bar{y}}_2^2}
+                       = 1 - \frac{\sum_{i=1}^N \qty(y_i - \tilde{y}_i)^2}{\sum_{i=1}^N \qty(y_i - \bar{y})^2},
+\end{equation}
+where \(\bar{y}\) is the mean of the measured values. The \(R^2\) score should be as close to \(1\) as possible.
+
+Prediction and these measures of performance can be applied to two main types of data.
+Firstly, it can be applied to the data from which \(\vec{\beta}\) was derived, which is called the training data.
+Ordinary least squares, corresponding to \(\lambda=0\) for the other methods, will, by definition, give the best results for this data set.
+Secondly, the performance can be measured for values not among the training data, called test data. Ridge and LASSO are expected to outperform ordinary least squares for small, non-zero values of \(\lambda\) for this category of data.
+
+%                                      _ _
+%  _ __ ___  ___  __ _ _ __ ___  _ __ | (_)_ __   __ _
+% | '__/ _ \/ __|/ _` | '_ ` _ \| '_ \| | | '_ \ / _` |
+% | | |  __/\__ \ (_| | | | | | | |_) | | | | | | (_| |
+% |_|  \___||___/\__,_|_| |_| |_| .__/|_|_|_| |_|\__, |
+%                               |_|              |___/
+\subsection{Resampling methods}
+Resampling methods are techniques to improve the prediction accuracy and obtain estimates for quantities such as the variance of \(\vec{\beta}\) by repeatedly dividing the data set into training and test data.
+Two simple examples are \(k\)-fold cross-validation and bootstrapping.
+The former partitions the data set into \(k\) partitions.
+One of these subsets is chosen as test data on which the performance is measured, while the rest are used as training data.
+This process is the repeated \(k\) times, so that each subset is used once as test data.
+Bootstrapping, on the other hand, repeatedly creates training data sets by randomly selecting \(N\) values from the data set with replacement, while another, separate data set is used as test data each time, as illustrated by the snippet below.
+\lstinputlisting[linerange={bootstrapstart-bootstrapend}]{regression/src/bootstrap.f90}
+
+%  _     _                             _
+% | |__ (_) __ _ ___    __ _ _ __   __| |
+% | '_ \| |/ _` / __|  / _` | '_ \ / _` |
+% | |_) | | (_| \__ \ | (_| | | | | (_| |
+% |_.__/|_|\__,_|___/  \__,_|_| |_|\__,_|
+% __   ____ _ _ __(_) __ _ _ __   ___ ___
+% \ \ / / _` | '__| |/ _` | '_ \ / __/ _ \
+%  \ V / (_| | |  | | (_| | | | | (_|  __/
+%   \_/ \__,_|_|  |_|\__,_|_| |_|\___\___|
+\subsection{Bias and variance}
+The choice of the number of basis functions, \(p\), determines the complexity of the model to which the data set is fitted.
+A higher complexity makes the model a better approximation to the training data, which is said to reduce the \emph{bias} of the model.
+On the other hand, a higher complexity may decrease the model's ability to predict reasonable values for test data, since a more complex model will be more affected by noise in the model.
+This is said to increase the model's \emph{variance}.
+The best prediction performance is therefore achieved for a complexity which balances bias and variance, which is called the bias-variance trade-off\cite{mehta}.
+
+Following~\cite{mehta}, a mathematical manifestation of the bias-variance trade-off can be derived by assuming that the measured data set \(D=\qty{\qty(\vec{x}_i,y_i)}_{i=1}^N\) is generated by a combination of some model \(f\qty(\vec{x})\) (for example Franke's function) and random noise, specifically
+\begin{equation}
+    y_i = f\qty(\vec{x}_i) + \varepsilon_i \eqqcolon f_i + \varepsilon_i,
+\end{equation}
+where the variables \(\varepsilon_i\) are independent and normally distributed with variance \(\sigma^2\) around zero.
+Given a data set \(D\), a prediction \(\tilde{y}_i^D\) can be made by any of the regression methods discussed above.
+An expected mean square error can be found by averaging over all datasets \(D\) and all noises \(\vec{\varepsilon}\),
+\begin{alignat}{2}
+    E_{D,\varepsilon}\qty[\norm{\vec{y}-\vec{\tilde{y}}_D}_2^2]
+    &= E_{D,\varepsilon}\qty[\norm{\vec{y} - \vec{f} + \vec{f} - \vec{\tilde{y}}_D}_2^2] \label{eq:tmp}
+     = E_{D,\varepsilon}\qty[\norm{\vec{y} - \vec{f}}_2^2 + \norm{\vec{f} - \vec{\tilde{y}}_D}_2^2
+                             + 2 \qty(\vec{y} - \vec{f})\cdot\qty(\vec{f} - \vec{\tilde{y}}_D)],
+    \shortintertext{and using the linearity of the expectation value,}
+    &= E_{D,\varepsilon}\qty[\norm{\vec{y} - \vec{f}}_2^2] + E_{D,\varepsilon}\qty[\norm{\vec{f} - \vec{\tilde{y}}_D}_2^2]
+                             + 2 E_{D,\varepsilon}\qty[\qty(\vec{y} - \vec{f})\cdot\qty(\vec{f} - \vec{\tilde{y}}_D)]\\
+    &= E_{D,\varepsilon}\qty[\norm{\vec{\varepsilon}}_2^2] + E_{D,\varepsilon}\qty[\norm{\vec{f} - \vec{\tilde{y}}_D}_2^2]
+       + 2 E_{D,\varepsilon}\qty[\vec{\varepsilon}\cdot\qty(\vec{f} - \vec{\tilde{y}}_D)]\\
+    &= \sigma^2 + E_{D,\varepsilon}\qty[\norm{\vec{f} - \vec{\tilde{y}}_D}_2^2]
+       + 2 \cancel{E_{\varepsilon}\qty[\vec{\varepsilon}]}\cdot E_{D}\qty[\qty(\vec{f} - \vec{\tilde{y}}_D)]\\
+    &= \sigma^2 + E_{D}\qty[\norm{\vec{f} - \vec{\tilde{y}}_D}_2^2].
+\end{alignat}
+This expression can be further decomposed by adding and subtracting the average prediction, \(E_D\qty[\vec{\tilde{y}}_D]\),
+\begin{alignat}{2}
+    E_{D}\qty[\norm{\vec{y}-\vec{\tilde{y}}_D}_2^2]
+    &= \sigma^2 + E_{D}\qty[\norm{\vec{f}- E_D\qty[\vec{\tilde{y}}_D] + E_D\qty[\vec{\tilde{y}}_D] - \vec{\tilde{y}}_D}_2^2]\\
+    &= \sigma^2 + \norm{\vec{f}- E_D\qty[\vec{\tilde{y}}_D]}_2^2 + E_D\qty[\norm{E_D\qty[\vec{\tilde{y}}_D] - \vec{\tilde{y}}_D}_2^2]\\
+    &\phantom{{}={}} + 2E_D\qty[\qty(\vec{f}- E_D\qty[\vec{\tilde{y}}_D])\cdot\cancel{\qty(E_D\qty[\vec{\tilde{y}}_D] - \vec{\tilde{y}}_D)}]\\
+    &= \sigma^2 + \norm{\vec{f}- E_D\qty[\vec{\tilde{y}}_D]}_2^2 + E_D\qty[\norm{E_D\qty[\vec{\tilde{y}}_D] - \vec{\tilde{y}}_D}_2^2].
+\end{alignat}
+The first term, \(\sigma^2\), represents the noise in the generated data, which no model can overcome.
+The second term measures the deviation of the average prediction from the true, noise-free model, which is the (squared) bias.
+Lastly, the third term measures how much the predictions vary and is called the variance.
+A complex model (large \(p\)) will minimise the second term, since a complex model will be better suited to fit the true model, \(f\), while the third term will increase with model complexity since the fitting procedure will be more sensitive to noise in the different data sets.
+
+Unfortunately, the above bias-variance decomposition requires knowledge of the exact model behind the data, \(f\).
+A more computationally practical expression could have been derived by adding and subtracting \(E_D\qty[\vec{\tilde{y}}_D]\) in~\vref{eq:tmp}, which gives the expression
+\begin{equation}
+    E_{D}\qty[\norm{\vec{y}-\vec{\tilde{y}}_D}_2^2]
+    = \norm{\vec{y}- E_D\qty[\vec{\tilde{y}}_D]}_2^2 + E_D\qty[\norm{E_D\qty[\vec{\tilde{y}}_D] - \vec{\tilde{y}}_D}_2^2]
+\end{equation}
+by manipulations analogous to the ones used above. This is another formulation of the bias-variance decomposition which can be used without any information about the underlying model. Dividing by \(N\) gives the average \(\MSE\) on the left-hand side.
 
 
 \clearpage
