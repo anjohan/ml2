@@ -121,6 +121,17 @@
     columns/Method/.style={string type, column type=l}
 }
 
+\pgfplotsset{
+    tick align=outside,
+    tick pos=left,
+    xmajorgrids,
+    x grid style={white},
+    ymajorgrids,
+    y grid style={white},
+    axis line style={white},
+    axis background/.style={fill=white!89.803921568627459!black}
+}
+
 %start
 \begin{document}
 \tikzexternaldisable
@@ -441,72 +452,82 @@ A further improvement is to add a so-called momentum, i.e.\ use a linear combina
 \subsection{Linear regression}
 \begin{figure}[H]
     \centering
-    \begin{tikzpicture}[thick]
+    \begin{tikzpicture}
         \begin{axis}[
+            thick,
             width=6in, height=3in,
-            xmode=log, ymode=log,
-            legend style={draw=none, at={(0.02,0.98)}, anchor=north west},
+            legend style={draw=none, fill=none, at={(0.02,0.02)}, anchor=south west},
             legend cell align=left,
+            xmode=log,
             xlabel={\(\lambda\)},
-            ylabel={Error}
+            ylabel={\(R^2\) score},
         ]
             \addplot+ table[y index=1] {data/mse_Ridge.dat};
-            \addlegendentry{MSE};
-            \addplot+ table[y index=2] {data/mse_Ridge.dat};
-            \addlegendentry{Bias};
-            \addplot+ table[y index=3] {data/mse_Ridge.dat};
-            \addlegendentry{Variance};
+            \addlegendentry{Ridge};
+            \addplot+ table[y index=1] {data/mse_LASSO.dat};
+            \addlegendentry{LASSO};
         \end{axis}
     \end{tikzpicture}
+    \caption{\(R^2\) score on test data.}
 \end{figure}
 
 \begin{figure}[H]
     \centering
     \begin{tikzpicture}
         \begin{axis}[
-            axis on top,
-            width=0.5\textwidth,
-            axis equal image,
-            enlargelimits=false,
-            axis line style={draw=none},
-            tick style={draw=none},
-            ticks=none
+            thick,
+            width=6in, height=3in,
+            xmode=log, ymode=log,
+            legend style={draw=none, fill=none, at={(0.02,0.02)}, anchor=south west},
+            legend cell align=left,
+            xlabel={\(\lambda\)},
+            ylabel={Error},
         ]
-            \addplot[thick,blue] graphics[xmin=0,ymin=0,xmax=40,ymax=40] {data/J_ols1.png};
+            \addplot+ table[y index=2] {data/mse_Ridge.dat};
+            \addlegendentry{MSE (Ridge)};
+            \addplot+ table[y index=3] {data/mse_Ridge.dat};
+            \addlegendentry{Bias (Ridge)};
+            \addplot+ table[y index=4] {data/mse_Ridge.dat};
+            \addlegendentry{Variance (Ridge)};
+            \addplot+ table[y index=2] {data/mse_LASSO.dat};
+            \addlegendentry{MSE (LASSO)};
+            \addplot+ table[y index=3] {data/mse_LASSO.dat};
+            \addlegendentry{Bias (LASSO)};
+            \addplot+ table[y index=4] {data/mse_LASSO.dat};
+            \addlegendentry{Variance (LASSO)};
         \end{axis}
     \end{tikzpicture}
-    \caption{Coupling matrix for ordinary least squares regression. White is zero, black is one. It is clear that the lack of regularisation causes overfitting when few states are used as input.}
+    \caption{Bias-variance decomposition of the mean squared error for Ridge and LASSO regression. The bias and variance are expected to add up to the mean squared error, which is confirmed by the plot. Further, using a regularisation parameter \(\lambda\) which is too large causes the mean squared error to increase because the approximating model becomes unable to fit the data, i.e.\ the bias increases, and the reduction of variance can not compensate sufficiently.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{data/J_ols1.png}
+    \caption{Coupling matrix for ordinary least squares regression. White is zero, black is one. It is clear that the lack of regularisation causes overfitting when few states are used as input. Additionally, ordinary least squares and Ridge regression find a symmetric coupling matrix. The strange lower right quarter of the coupling matrix can be caused by either something wrong which I have done, or the use of \lstinline{dgelsd}, which finds a singular value decomposition via the divide-and-conquer algorithm.}
 \end{figure}
 
 \begin{luacode*}
 i = 1
 for line in io.lines("data/Ridge_lambdas.dat") do
+    -- if i < 6 then goto next end
     s = ""
         .. [[\begin{figure}[h!tb] ]]
         .. [[\centering]]
         .. [[\begin{subfigure}[b]{0.45\textwidth} \centering]]
-            .. [[\begin{tikzpicture}]]
-                .. [[\begin{axis}[]]
-                    .. [[axis on top,]]
-                    .. [[width=\textwidth,]]
-                    .. [[axis equal image,]]
-                    .. [[enlargelimits=false,]]
-                    .. [[axis line style={draw=none}, tick style={draw=none},]]
-                    .. [[ticks=none]]
-                    .. [[ ] ]]
-                    .. [[\addplot[thick,blue] graphics[xmin=0,ymin=0,xmax=40,ymax=40] {data/J_Ridge]] .. tostring(i) .. [[.png};]]
-                .. [[\end{axis}]]
-            .. [[\end{tikzpicture}]]
+            .. [[\includegraphics[height=0.20\textheight]{data/J_Ridge]] .. tostring(i) .. [[.png}]]
             .. [[\caption{Ridge regression}]]
         .. [[\end{subfigure}]]
-        .. [[\caption{Coupling matrices for \(\lambda = \num{]] .. line ..[[}\)}]]
-    .. [[\end{figure}]] .. "\n" .. [[\vspace{3cm}]]
-    i = i + 1
+        .. [[\begin{subfigure}[b]{0.45\textwidth} \centering]]
+            .. [[\includegraphics[height=0.20\textheight]{data/J_LASSO]] .. tostring(i) .. [[.png}]]
+            .. [[\caption{LASSO regression}]]
+        .. [[\end{subfigure}]]
+        .. [[\caption{Coupling matrix for \(\lambda = \num{]] .. line ..[[}\)}]]
+    .. [[\end{figure}]]
     tex.sprint(s)
+    ::next::
+    i = i + 1
 end
 \end{luacode*}
-
-\includegraphics[width=0.5\textwidth]{data/J_Ridge8.png}
 
 
 
