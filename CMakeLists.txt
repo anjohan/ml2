@@ -22,3 +22,13 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/regression)
 add_library(ising ${CMAKE_CURRENT_SOURCE_DIR}/lib/ising.f90)
 
 target_link_libraries(ising regression)
+
+set(libs ising regression)
+
+file(GLOB program_files ${CMAKE_CURRENT_SOURCE_DIR}/programs/*.f90)
+
+foreach(program_file ${program_files})
+    get_filename_component(program ${program_file} NAME_WE)
+    add_executable(${program} ${program_file})
+    target_link_libraries(${program} ${libs})
+endforeach(program_file)

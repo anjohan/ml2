@@ -281,6 +281,17 @@ or, in matrix form,
 with \(\vec{p} = 1/\qty(1+\exp{-X\vec{\beta}})\).
 The equation \(\nabla Q = \vec{0}\) does not have an analytic solution, but it can be minimised with the standard minimisation methods.
 
+\subsubsection{Regularisation}
+As with linear regression, a logistic regressor can be regularised by adding a term to the cost function in the hope of reducing variance and overfitting.
+One example is the same term as in Ridge regression,
+\begin{equation}
+    Q = - \sum_i \qty(y_i \ln(p_i) + (1-y_i)\ln(1-p_i)) + \tfrac{1}{2}\lambda \norm{\vec{\beta}}_2^2,
+\end{equation}
+which adds a simple term to the gradient of the cost function,
+\begin{equation}
+    \nabla_{\vec{\beta}} Q = X^T \qty(\vec{p} - \vec{y}) + \lambda \vec{\beta}.
+\end{equation}
+
 
 %                            _              _                      _
 % _ __   ___ _   _ _ __ __ _| |  _ __   ___| |___      _____  _ __| | _____
@@ -294,7 +305,107 @@ A neural network is a series of affine transformations and activation functions,
 
 Each pair of one affine transformation and activation function is called a \emph{layer}. The number of outputs from a layer is called the number of \emph{neurons} in the layer. Mathematically, layer number \(l\) contains a weight-matrix \(W^l\), a bias vector \(\vec{b}^l\) and an activation function \(f^l\), takes input \(\vec{a}^{l-1}\), applies the affine transformation \(\vec{z}^l = W^l \vec{a}^{l-1} + \vec{b}^l\) and returns the output \(f^l(\vec{z}^l)\).
 
-Prediction is done recursively. The first layer, called the input layer, applies its affine transformation to the input vector and then the activation function. The second layer receives the output of the first layer and repeats the process. This is repeated up to and including the final (output) layer, whose activation is tailored to either classification or regression.
+Prediction is done recursively. The first layer, called the input layer, applies its affine transformation to the input vector and then the activation function. The second layer receives the output of the first layer and repeats the process. This is repeated up to and including the final (output) layer, whose activation function is tailored to either classification or regression.
+
+\subsubsection{Minimisation: Back-propagation}
+Similarly to logistic regression, the cost function should be minimised using some sort of gradient method.
+This requires taking the derivative of the cost function with respect to the fitting parameters, i.e.\ the weight matrices \(W^l\) and the bias vectors \(\vec{b}^l\) for neural networks.
+Since the prediction is calculated as a series of compositions of complicated functions, it is not possible to derive closed-form expressions of the derivatives of the cost function with respect to weights and biases.
+Instead, one can find the derivative with respect to the weights and biases of the \emph{last} layer, and then derive a recursion relation which gives the derivatives at earlier layers as well. This is the famous \emph{back-propagation} algorithm.
+
+First, the derivatives of the cost function with respect to the biases can be calculated via the chain rule,
+\begin{equation}
+    \pdv{Q}{b_j^l} = \pdv{Q}{z_k^l}\pdv{z_k^l}{b_j^l} = \pdv{Q}{z_k^l}\pdv{b_j^l}(W_{ki}^l a_i^{l-1} + b_k^l) = \pdv{Q}{z_k^l}\delta_{jk}
+    = \pdv{Q}{z_j^l} \eqqcolon \delta_j^l.
+\end{equation}
+Applying the chain rule again, \(\delta_j^l\) is rewritten as
+\begin{equation}
+    \delta_j^l = \pdv{Q}{z_j^l} = \pdv{Q}{a_k^l}\pdv{a_k^l}{z_j^l} = \pdv{Q}{a_k^l}\pdv{f^l\qty(z_k^l)}{z_j^l}
+               = \pdv{Q}{a_j^l}\pdv{f^l}{z_j^l}.
+\end{equation}
+When doing regression, \(f^L\) will usually be the identity, giving \(1\) as the last partial derivative. This is not the case in classification, nor in the earlier layers.
+
+Additionally, the derivatives with respect to the weight matrix elements are
+\begin{equation}
+    \pdv{Q}{W_{jk}^l} = \pdv{Q}{z_i^l}\pdv{z_i^l}{W_{jk}^l} = \delta_i^l \pdv{W_{jk}^l}\qty(W_{im}^l a_m^{l-1} + b_i^l)
+                      = \delta_j^l a_k^{l-1}.
+\end{equation}
+These equations can be combined to give the derivatives of the cost function with respect to the weights and biases at the last layer, but does not say anything about the gradients at earlier layers, which would require knowledge of \(\delta_j^l\) for \(l<L\).
+This relation can be derived through one final application of the chain rule,
+\begin{equation}
+    \delta_j^l = \pdv{Q}{z_j^l} = \pdv{Q}{z_k^{l+1}}\pdv{z_k^{l+1}}{z_j^l}
+               = \delta_k^{l+1} \pdv{z_k^{l+1}}{a_i^l}\pdv{a_i^l}{z_j^{l}}
+               = \delta_k^{l+1} \pdv{a_i^l}\qty(W_{km}^{l+1}a_m^l + b_k^l) \pdv{f^l(z_i^l)}{z_j^{l}}
+               = \delta_k^{l+1} W_{kj} {f^l} '(z_j^l).
+\end{equation}
+
+The above results can be summarised on a matrix form as
+\begin{equation}
+    \vec{\delta}^{\,L} = \nabla_{\vec{a}^L}Q \circ {f^L}'(\vec{z}^L),
+\end{equation}
+which is easily calculated given a cost function \(Q\) and final activation function \(f^L\) (\(\circ\) denotes the element-wise product),
+\begin{equation}
+    \vec{\delta}^{\,l} = \qty(W^{l+1, T}\vec{\delta}^{\,l+1})\circ {f^l}'(\vec{z}^{\,l}),
+\end{equation}
+which can be calculated recursively once \(\vec{\delta}^L\) is known from the previous equation, and finally the gradients
+\begin{equation}
+    \nabla_{\vec{b}^l}Q = \vec{\delta}^{\,l} \qquad \text{and}\qquad \nabla_{W^l}Q = \vec{\delta}^{\,l} \otimes \vec{a}^{l-1}.
+\end{equation}
+Together, these four equations give a complete recipe of how to calculate the gradients of the cost function in a neural network.
+
+\subsubsection{Activation functions}
+The simplest activation function is the identity, whose derivative is \(1\). This is often used in the output layer for regression problems.
+Another activation function, which historically has been widely used in the intermediate (hidden) layers of the neural network, is the sigmoid or logistic function, whose derivative was shown earlier to be
+\begin{equation}
+    f'(z) = f(z)(1-f(z)).
+\end{equation}
+Other activation functions include the hyperbolic tangent, with derivative
+\begin{equation}
+    f'(z) = 1 - f(z)^2,
+\end{equation}
+and the rectified linear unit (RELU),
+\begin{equation}
+    f(z) = \begin{cases}z, & z \geq 0 \\ 0, & z < 0 \end{cases}
+    \implies
+    f'(z) = \begin{cases}1, & z \geq 0 \\ 0, & z < 0 \end{cases} .
+\end{equation}
+
+\subsubsection{Cost functions and output layers}
+When applying a neural network to regression problems, the natural choice of cost function is simply the squared deviation from the known outputs,
+\begin{equation}
+    Q = \tfrac{1}{2}\norm{\vec{a}^L - \vec{y}}_2^2,
+\end{equation}
+with the gradient
+\begin{equation}
+    \nabla_{\vec{a}^L} Q = \vec{a}^L - \vec{y}.
+\end{equation}
+Regressing neural networks usually use the identity as the activation function for the output layer, giving
+\begin{equation}
+    {f^L}'(\vec{z}^L) = \vec{1}
+\end{equation}
+and
+\begin{equation}
+    \vec{\delta}^{\,L} = \vec{a}^L - \vec{y}.
+\end{equation}
+
+Binary classification problems such as the one of the two-dimensional Ising model may use the same cost function as that of logistic regression,with the logistic function used as the activation function of the output layer in order to obtain a probability \(a^L\) between zero and one.
+The cost function is then
+\begin{equation}
+    Q = -\qty(y\ln(a^L) - (1 - y)\ln(1-a^L))
+\end{equation}
+with
+\begin{equation}
+    \nabla_{\vec{a}^L} Q = \pdv{Q}{a^L} = -\frac{y}{a^L} - \frac{1-y}{1-a^L}
+                         = \frac{a^L - y}{a^L\qty(1-a^L)}
+\end{equation}
+giving
+\begin{equation}
+    \delta^L = \pdv{Q}{a^L} \pdv{f^L}{z^L}
+             = \frac{a^L - y}{a^L\qty(1-a^L)} \cdot f^L(z^L)\qty(1-f^L(z^L))
+             = a^L - y.
+\end{equation}
+
+
 
 %      _             _               _   _
 %  ___| |_ ___   ___| |__   __ _ ___| |_(_) ___
@@ -317,9 +428,89 @@ where \(Q\qty(X_{\qty[\vec{\imath},:]},\vec{y}_{\vec{\imath}})\) denotes the gra
 
 A further improvement is to add a so-called momentum, i.e.\ use a linear combination of the current and previous gradient rather than just using the current gradient,
 \begin{equation}
-    \vec{v}_{k} = \gamma \vec{v}_{k+1} + \alpha Q\qty(X_{\qty[\vec{\imath},:]},\vec{y}_{\vec{\imath}}), \qquad
+    \vec{v}_{k} = \gamma \vec{v}_{k-1} + \alpha Q\qty(X_{\qty[\vec{\imath},:]},\vec{y}_{\vec{\imath}}), \qquad
     \vec{\beta}_{k+1} = \vec{\beta}_k - \vec{v}_k.
 \end{equation}
+
+%                      _ _
+%  _ __ ___  ___ _   _| | |_ ___
+% | '__/ _ \/ __| | | | | __/ __|
+% | | |  __/\__ \ |_| | | |_\__ \
+% |_|  \___||___/\__,_|_|\__|___/
+\section{Results}
+\subsection{Linear regression}
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[thick]
+        \begin{axis}[
+            width=6in, height=3in,
+            xmode=log, ymode=log,
+            legend style={draw=none, at={(0.02,0.98)}, anchor=north west},
+            legend cell align=left,
+            xlabel={\(\lambda\)},
+            ylabel={Error}
+        ]
+            \addplot+ table[y index=1] {data/mse_Ridge.dat};
+            \addlegendentry{MSE};
+            \addplot+ table[y index=2] {data/mse_Ridge.dat};
+            \addlegendentry{Bias};
+            \addplot+ table[y index=3] {data/mse_Ridge.dat};
+            \addlegendentry{Variance};
+        \end{axis}
+    \end{tikzpicture}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}
+        \begin{axis}[
+            axis on top,
+            width=0.5\textwidth,
+            axis equal image,
+            enlargelimits=false,
+            axis line style={draw=none},
+            tick style={draw=none},
+            ticks=none
+        ]
+            \addplot[thick,blue] graphics[xmin=0,ymin=0,xmax=40,ymax=40] {data/J_ols1.png};
+        \end{axis}
+    \end{tikzpicture}
+    \caption{Coupling matrix for ordinary least squares regression. White is zero, black is one. It is clear that the lack of regularisation causes overfitting when few states are used as input.}
+\end{figure}
+
+\begin{luacode*}
+i = 1
+for line in io.lines("data/Ridge_lambdas.dat") do
+    s = ""
+        .. [[\begin{figure}[h!tb] ]]
+        .. [[\centering]]
+        .. [[\begin{subfigure}[b]{0.45\textwidth} \centering]]
+            .. [[\begin{tikzpicture}]]
+                .. [[\begin{axis}[]]
+                    .. [[axis on top,]]
+                    .. [[width=\textwidth,]]
+                    .. [[axis equal image,]]
+                    .. [[enlargelimits=false,]]
+                    .. [[axis line style={draw=none}, tick style={draw=none},]]
+                    .. [[ticks=none]]
+                    .. [[ ] ]]
+                    .. [[\addplot[thick,blue] graphics[xmin=0,ymin=0,xmax=40,ymax=40] {data/J_Ridge]] .. tostring(i) .. [[.png};]]
+                .. [[\end{axis}]]
+            .. [[\end{tikzpicture}]]
+            .. [[\caption{Ridge regression}]]
+        .. [[\end{subfigure}]]
+        .. [[\caption{Coupling matrices for \(\lambda = \num{]] .. line ..[[}\)}]]
+    .. [[\end{figure}]] .. "\n" .. [[\vspace{3cm}]]
+    i = i + 1
+    tex.sprint(s)
+end
+\end{luacode*}
+
+\includegraphics[width=0.5\textwidth]{data/J_Ridge8.png}
+
+
+
+
 
 %                                   _ _
 %   __ _ _ __  _ __   ___ _ __   __| (_)_  __
@@ -329,6 +520,7 @@ A further improvement is to add a so-called momentum, i.e.\ use a linear combina
 %       |_|   |_|
 \clearpage
 \appendix
+\part*{Appendix}
 \addcontentsline{toc}{part}{Appendix}
 \renewcommand{\thesection}{\Alph{section}}
 \labelformat{section}{appendix~#1}
