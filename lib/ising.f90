@@ -7,17 +7,35 @@ module mod_ising
         integer :: i, j, L
 
         contains
-            procedure :: eval
+            procedure :: eval => eval_coupling
+    end type
+
+    type, public, extends(basisfunction) :: spin_function
+        integer :: i
+        contains
+            procedure :: eval => eval_spin
     end type
 
     contains
-        function eval(self, x) result(H)
+        function eval_coupling(self, x) result(H)
             class(coupling), intent(in) :: self
             real(dp), intent(in) :: x(:)
                 ! Vectorised matrix of couplings, - si * sj
             real(dp) :: H
 
             H = -x((self%j-1)*self%L + self%i)
+        end function
+
+        function eval_spin(self, x) result(s)
+            class(spin_function), intent(in) :: self
+            real(dp), intent(in) :: x(:)
+            real(dp) :: s
+
+            if (self%i == 0) then
+                s = 1.0d0
+            else
+                s = x(self%i)
+            end if
         end function
 
         function energy(s)
@@ -59,6 +77,17 @@ module mod_ising
                         s%L = L
                     end associate
                 end do
+            end do
+        end subroutine
+
+        subroutine create_spin_basis(basis, L)
+            class(spin_function), allocatable, intent(out) :: basis(:)
+            integer, intent(in) :: L
+
+            integer :: i
+            allocate(basis(1:L+1))
+            do i = 0, L
+                basis(i+1)%i = i
             end do
         end subroutine
 end module

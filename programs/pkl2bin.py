@@ -7,11 +7,11 @@ def write_arrays(name, states, labels):
     num_spins = states.shape[1]
     with open("data/" + name + "_labels.bin", "wb") as f:
         np.array([num_states]).astype("int32").tofile(f)
-        labels.astype("int32").tofile(f)
+        labels.astype("float64").tofile(f)
 
     with open("data/" + name + "_states.bin", "wb") as f:
         np.array([num_states, num_spins]).astype("int32").tofile(f)
-        states.astype("int32").tofile(f)
+        np.asarray(states, order="C").T.astype("float64").tofile(f)
 
 
 with open("data/states.pkl", "rb") as f:
@@ -32,6 +32,8 @@ Y_critical = labels[70000:100000]
 
 X_disordered = data[100000:, :]
 Y_disordered = labels[100000:]
+
+print(X_ordered.shape, X_critical.shape, X_disordered.shape)
 
 write_arrays("ordered", X_ordered, Y_ordered)
 write_arrays("critical", X_critical, Y_critical)

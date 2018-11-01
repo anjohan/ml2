@@ -33,6 +33,9 @@ data/J_LASSO_%.dat: programs/lasso.py
 
 build/%: build programs/%.f90
 
+debug: $(shell find . -name "*.f90")
+	mkdir -p debug && cd debug && cmake .. -DCMAKE_BUILD_TYPE=Debug && make -j
+
 data/states.pkl:
 	wget https://physics.bu.edu/~pankajm/ML-Review-Datasets/isingMC/Ising2DFM_reSample_L40_T=All.pkl -O $@
 
