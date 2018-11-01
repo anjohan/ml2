@@ -25,7 +25,7 @@ target_link_libraries(ising regression)
 
 set(libs ising regression)
 
-file(GLOB program_files ${CMAKE_CURRENT_SOURCE_DIR}/programs/*.f90)
+file(GLOB program_files ${CMAKE_CURRENT_SOURCE_DIR}/programs/*.*90)
 
 foreach(program_file ${program_files})
     get_filename_component(program ${program_file} NAME_WE)
