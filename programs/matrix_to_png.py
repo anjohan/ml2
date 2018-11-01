@@ -17,8 +17,9 @@ for i in range(2, len(lines), L + 1):
         x[j, :] = list(map(float, lines[i + j].split()))
     print(x)
     plt.imsave(
-        "data/J_" + method + str(n) + ".png",
+        "data/J_" + method + "_" + str(n) + ".png",
         x,
         cmap=plt.get_cmap("Greys"),
         vmin=0,
-        vmax=1)
+        vmax=1,
+    )

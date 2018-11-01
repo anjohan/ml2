@@ -166,7 +166,11 @@
     This project applies several statistical learning methods to data from the famous Ising model.
     Linear regression is used to determine the coupling, while classification of spin configurations as ordered or disordered is achived with both logistic regression and multi-layered naural networks.
     Finally, neural networks are trained to predict the energy of a spin configuration.
-    Ridge and LASSO regression are found to outperform ordinary least squares when applied to test data, with LASSO being able to break the symmetry of the coupling and give the correct coupling matrix.
+
+    LASSO regression is found to perfectly reproduce the Ising model and give an \(R^2\) score of \(1\) for the correct choice of regularisation.
+    Using \(\num{400}\) training samples requires \(\lambda\in\qty[10^{-3},10^{-2}]\), while \(\num{1000}\) allows for smaller values of \(\lambda\).
+    The largest viable \(\lambda\) is \(10^{-1}\) in both cases, after which the performance decreases rapidly.
+    Visualisation of the coupling matrices shows LASSO being able to break the symmetry and return the correct model, while Ridge returns a symmetric coupling matrix.
 \end{abstract}
 
 \tableofcontents
@@ -464,11 +468,13 @@ A further improvement is to add a so-called momentum, i.e.\ use a linear combina
         ]
             \addplot+ table[y index=1] {data/mse_Ridge.dat};
             \addlegendentry{Ridge};
-            \addplot+ table[y index=1] {data/mse_LASSO.dat};
-            \addlegendentry{LASSO};
+            \addplot+ table[y index=1] {data/mse_LASSO_400.dat};
+            \addlegendentry{LASSO, \(\num{400}\) states};
+            \addplot+ table[y index=1] {data/mse_LASSO_1000.dat};
+            \addlegendentry{LASSO, \(\num{1000}\) states};
         \end{axis}
     \end{tikzpicture}
-    \caption{\(R^2\) score on test data.}
+    \caption{\(R^2\) score on test data. While the regularisation of Ridge regression does not significantly improve the performance, as illustrated by the constant coupling matrices in~\vref{fig:coupling}, the correct choice of regularisation parameter enables LASSO to give perfect predictive ability. This corresponds well with the coupling matrices shown in~\ref{fig:coupling} and onwards, which show that LASSO regularisation gives the same, asymmetric coupling matrices as those of the underlying model.}\label{fig:r2}
 \end{figure}
 
 \begin{figure}[H]
@@ -478,7 +484,7 @@ A further improvement is to add a so-called momentum, i.e.\ use a linear combina
             thick,
             width=6in, height=3in,
             xmode=log, ymode=log,
-            legend style={draw=none, fill=none, at={(0.02,0.02)}, anchor=south west},
+            legend style={draw=none, fill=none, at={(0.98,0.02)}, anchor=south east},
             legend cell align=left,
             xlabel={\(\lambda\)},
             ylabel={Error},
@@ -489,15 +495,21 @@ A further improvement is to add a so-called momentum, i.e.\ use a linear combina
             \addlegendentry{Bias (Ridge)};
             \addplot+ table[y index=4] {data/mse_Ridge.dat};
             \addlegendentry{Variance (Ridge)};
-            \addplot+ table[y index=2] {data/mse_LASSO.dat};
-            \addlegendentry{MSE (LASSO)};
-            \addplot+ table[y index=3] {data/mse_LASSO.dat};
-            \addlegendentry{Bias (LASSO)};
-            \addplot+ table[y index=4] {data/mse_LASSO.dat};
-            \addlegendentry{Variance (LASSO)};
+            \addplot+ table[y index=2] {data/mse_LASSO_400.dat};
+            \addlegendentry{MSE (LASSO, \(\num{400}\) states)};
+            \addplot+ table[y index=3] {data/mse_LASSO_400.dat};
+            \addlegendentry{Bias (LASSO, \(\num{400}\) states)};
+            \addplot+ table[y index=4] {data/mse_LASSO_400.dat};
+            \addlegendentry{Variance (LASSO, \(\num{400}\) states)};
+            \addplot+ table[y index=2] {data/mse_LASSO_1000.dat};
+            \addlegendentry{MSE (LASSO, \(\num{1000}\) states)};
+            \addplot+ table[y index=3] {data/mse_LASSO_1000.dat};
+            \addlegendentry{Bias (LASSO, \(\num{1000}\) states)};
+            \addplot+ table[y index=4] {data/mse_LASSO_1000.dat};
+            \addlegendentry{Variance (LASSO, \(\num{1000}\) states)};
         \end{axis}
     \end{tikzpicture}
-    \caption{Bias-variance decomposition of the mean squared error for Ridge and LASSO regression. The bias and variance are expected to add up to the mean squared error, which is confirmed by the plot. Further, using a regularisation parameter \(\lambda\) which is too large causes the mean squared error to increase because the approximating model becomes unable to fit the data, i.e.\ the bias increases, and the reduction of variance can not compensate sufficiently.}
+    \caption{Bias-variance decomposition of the mean squared error for Ridge and LASSO regression. The bias and variance are expected to add up to the mean squared error, which is confirmed by the plot. Further, using a regularisation parameter \(\lambda\) which is too large causes the mean squared error to increase because the approximating model becomes unable to fit the data, i.e.\ the bias increases, and the reduction of variance can not compensate sufficiently. As seen also in~\vref{fig:r2}, LASSO outperforms Ridge regression for certain values of \(\lambda\).}
 \end{figure}
 
 \begin{figure}[H]
@@ -513,16 +525,21 @@ for line in io.lines("data/Ridge_lambdas.dat") do
     s = ""
         .. [[\begin{figure}[h!tb] ]]
         .. [[\centering]]
-        .. [[\begin{subfigure}[b]{0.45\textwidth} \centering]]
-            .. [[\includegraphics[height=0.20\textheight]{data/J_Ridge]] .. tostring(i) .. [[.png}]]
-            .. [[\caption{Ridge regression}]]
+        .. [[\begin{subfigure}[t]{0.3\textwidth} \centering]]
+            .. [[\includegraphics[height=0.20\textheight]{data/J_Ridge_]] .. tostring(i) .. [[.png}]]
+            .. [[\caption{Ridge regression, \(\num{1000}\) training states.}]]
+        .. [[\end{subfigure}\hspace{0.04\textwidth}]]
+        .. [[\begin{subfigure}[t]{0.3\textwidth} \centering]]
+            .. [[\includegraphics[height=0.20\textheight]{data/J_LASSO_400_]] .. tostring(i) .. [[.png}]]
+            .. [[\caption{LASSO regression, \(\num{400}\) training states.}]]
+        .. [[\end{subfigure}\hspace{0.04\textwidth}]]
+        .. [[\begin{subfigure}[t]{0.3\textwidth} \centering]]
+            .. [[\includegraphics[height=0.20\textheight]{data/J_LASSO_1000_]] .. tostring(i) .. [[.png}]]
+            .. [[\caption{LASSO regression, \(\num{1000}\) training states.}]]
         .. [[\end{subfigure}]]
-        .. [[\begin{subfigure}[b]{0.45\textwidth} \centering]]
-            .. [[\includegraphics[height=0.20\textheight]{data/J_LASSO]] .. tostring(i) .. [[.png}]]
-            .. [[\caption{LASSO regression}]]
-        .. [[\end{subfigure}]]
-        .. [[\caption{Coupling matrix for \(\lambda = \num{]] .. line ..[[}\)}]]
-    .. [[\end{figure}]]
+        .. [[\caption{Coupling matrices for \(\lambda = \num{]] .. line ..[[}\).}]]
+    if i == 1 then s = s .. [[ \label{fig:coupling} ]] end
+    s = s .. [[\end{figure}]]
     tex.sprint(s)
     ::next::
     i = i + 1

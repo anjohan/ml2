@@ -1,6 +1,6 @@
 sources = $(shell find -name "*.f90")
 SHELL := /usr/bin/bash
-deps = sources2.bib data/J_Ridge1.png data/J_ols1.png data/J_LASSO1.png
+deps = sources2.bib data/J_Ridge_1.png data/J_ols_1.png data/J_LASSO_1000_1.png data/J_LASSO_400_1.png
 
 all:
 	mkdir -p data
@@ -20,7 +20,7 @@ build: $(sources)
 sources2.bib: sources.bib
 	betterbib -l $< $@
 
-data/J_%1.png: ./programs/matrix_to_png.py data/J_%.dat
+data/J_%_1.png: ./programs/matrix_to_png.py data/J_%.dat
 	python $< $*
 
 data/J_ols.dat: build/linreg
@@ -28,8 +28,8 @@ data/J_ols.dat: build/linreg
 
 data/J_Ridge.dat: data/J_ols.dat
 
-data/J_LASSO.dat: programs/lasso.py
-	python $<
+data/J_LASSO_%.dat: programs/lasso.py
+	python $< $*
 
 build/%: build programs/%.f90
 
