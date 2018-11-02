@@ -514,7 +514,7 @@ A further improvement is to add a so-called momentum, i.e.\ use a linear combina
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.5\textwidth]{data/J_ols1.png}
+    \includegraphics[width=0.5\textwidth]{data/J_ols_1.png}
     \caption{Coupling matrix for ordinary least squares regression. White is zero, black is one. It is clear that the lack of regularisation causes overfitting when few states are used as input. Additionally, ordinary least squares and Ridge regression find a symmetric coupling matrix. The strange lower right quarter of the coupling matrix can be caused by either something wrong which I have done, or the use of \lstinline{dgelsd}, which finds a singular value decomposition via the divide-and-conquer algorithm.}
 \end{figure}
 
