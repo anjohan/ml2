@@ -1,6 +1,6 @@
 sources = $(shell find -name "*.f90")
 SHELL := /usr/bin/bash
-deps = sources2.bib data/J_Ridge_1.png data/J_ols_1.png data/J_LASSO_1000_1.png data/J_LASSO_400_1.png data/ordered_states.bin
+deps = sources2.bib data/J_Ridge_1.png data/J_ols_1.png data/J_LASSO_1000_1.png data/J_LASSO_400_1.png data/states.bin
 
 all:
 	mkdir -p data
@@ -42,7 +42,7 @@ data/states.pkl:
 data/labels.pkl:
 	wget https://physics.bu.edu/~pankajm/ML-Review-Datasets/isingMC/Ising2DFM_reSample_L40_T=All_labels.pkl -O $@
 
-data/ordered_states.bin: programs/pkl2bin.py data/labels.pkl data/states.pkl
+data/states.bin: programs/pkl2bin.py data/labels.pkl data/states.pkl
 	python $<
 
 clean:
