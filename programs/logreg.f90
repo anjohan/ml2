@@ -71,7 +71,7 @@ program logreg
         y_train = y_noncrit(N_test+1:)
 
 
-    analysis: block
+    simulations: block
         class(binary_logreg), allocatable :: fitter
 
         real(dp), allocatable :: lambdas(:), momentums(:), learning_rates(:), &
@@ -82,7 +82,7 @@ program logreg
         integer, allocatable :: training_pred(:), test_pred(:), crit_pred(:)
 
         lambdas = [(10.0d0**i, i = -4,0)]
-        momentums = [(0.05d0*i, i = 0, 4)]
+        momentums = [(0.2d0*i, i = 0, 5)]
         learning_rates = [(10.0d0**i, i = -4, 0)]
 
         num_lambdas = size(lambdas)
@@ -97,7 +97,7 @@ program logreg
         allocate(test_pred, mold=y_test)
         allocate(crit_pred, mold=y_crit)
 
-        fitter = binary_logreg(learning_rate=1.0d0)
+        fitter = binary_logreg(learning_rate=1.0d0, batch_size=32)
 
         iteration = -1
 
@@ -127,6 +127,8 @@ program logreg
                                                  / (1.0d0*size(y_test))
                     crit_accuracies(i,j,k) = count(y_crit == crit_pred) &
                                                  / (1.0d0*size(y_crit))
+                    write(*,*) training_accuracies(i,j,k), test_accuracies(i,j,k), &
+                                crit_accuracies(i,j,k)
                 end do
             end do
         end do
@@ -134,6 +136,31 @@ program logreg
         call co_sum(training_accuracies)
         call co_sum(test_accuracies)
         call co_sum(crit_accuracies)
-    end block analysis
+
+        if (this_image() == 1) then
+        post_analysis: block
+            integer :: best_indices(2)
+            character(len=1024) :: filename
+            real(dp), allocatable :: tot_accuracy(:,:,:)
+
+            tot_accuracy = test_accuracies + crit_accuracies
+
+            open(newunit=u, file="data/logreg_table.dat", status="replace")
+            write(u, "(a)") "lambda {Training accuracy} {Test accuracy}" &
+                            // " {Critical accuracy} {Learning rate} {Momentum}"
+
+            do i = 1, num_lambdas
+                best_indices = maxloc(tot_accuracy(i,:,:))
+                j = best_indices(1); k = best_indices(2)
+
+                write(u, "(es10.0,x,f0.2,x,f0.2,x,f0.2,x,es10.0,x,f0.2)") &
+                    lambdas(i), training_accuracies(i,j,k), test_accuracies(i,j,k), &
+                    crit_accuracies(i,j,k), learning_rates(j), momentums(k)
+            end do
+            close(u)
+        end block post_analysis
+        end if
+
+    end block simulations
 
 end program

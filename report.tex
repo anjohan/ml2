@@ -523,7 +523,7 @@ i = 1
 for line in io.lines("data/Ridge_lambdas.dat") do
     -- if i < 6 then goto next end
     s = ""
-        .. [[\begin{figure}[h!tb] ]]
+        .. [[\begin{figure}[H] ]]
         .. [[\centering]]
         .. [[\begin{subfigure}[t]{0.3\textwidth} \centering]]
             .. [[\includegraphics[height=0.20\textheight]{data/J_Ridge_]] .. tostring(i) .. [[.png}]]
@@ -546,7 +546,12 @@ for line in io.lines("data/Ridge_lambdas.dat") do
 end
 \end{luacode*}
 
-
+\subsection{Logistic regression}
+\begin{table}[H]
+    \centering
+    \caption{Accuracy on training and test data, as well as the critical states, for a variety of regularisations \(\lambda\). Optimal momentums and learning rates are estimated through a simple parameter sweep. The number of stochastic gradient descent iterations was limited to \(100\), while the batch size was \(32\).}
+    \pgfplotstabletypeset[columns/lambda/.style={column name={$\lambda$},dec sep align},columns/Momentum/.style={fixed},sci, sci zerofill,precision=1]{data/logreg_table.dat}
+\end{table}
 
 
 

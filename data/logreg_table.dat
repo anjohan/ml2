@@ -1,0 +1,6 @@
+lambda {Training accuracy} {Test accuracy} {Critical accuracy} {Learning rate} {Momentum}
+    1.E-04 .71 .70 .61     1.E-03 .40
+    1.E-03 .71 .69 .62     1.E-04 .60
+    1.E-02 .71 .68 .64     1.E-04 .60
+    1.E-01 .69 .67 .66     1.E-04 .60
+    1.E+00 .71 .71 .61     1.E-03 .40

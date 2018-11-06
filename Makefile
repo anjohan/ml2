@@ -45,6 +45,9 @@ data/labels.pkl:
 data/states.bin: programs/pkl2bin.py data/labels.pkl data/states.pkl
 	python $<
 
+data/logreg_table.dat: programs/logreg.f90 build
+	mpirun ./$<
+
 clean:
 	latexmk -c
 	rm -rf *.run.xml *.bbl build

@@ -4,7 +4,10 @@ sources2.bib
 *.tif
 *.dat
 build/
-data/
+*.pkl
+*.png
+*.dat
+*.bin
 *.makefile
 *.figlist
 tags
