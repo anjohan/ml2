@@ -1,3 +1,6 @@
 [submodule "regression"]
 	path = regression
 	url = git@github.com:anjohan/regression.git
+[submodule "neuralnetwork"]
+	path = neuralnetwork
+	url = git@github.com:anjohan/neuralnetwork

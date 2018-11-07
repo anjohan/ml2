@@ -320,7 +320,7 @@ A neural network is a series of affine transformations and activation functions,
 
 Each pair of one affine transformation and activation function is called a \emph{layer}. The number of outputs from a layer is called the number of \emph{neurons} in the layer. Mathematically, layer number \(l\) contains a weight-matrix \(W^l\), a bias vector \(\vec{b}^l\) and an activation function \(f^l\), takes input \(\vec{a}^{l-1}\), applies the affine transformation \(\vec{z}^l = W^l \vec{a}^{l-1} + \vec{b}^l\) and returns the output \(f^l(\vec{z}^l)\).
 
-Prediction is done recursively. The first layer, called the input layer, applies its affine transformation to the input vector and then the activation function. The second layer receives the output of the first layer and repeats the process. This is repeated up to and including the final (output) layer, whose activation function is tailored to either classification or regression.
+Prediction is done recursively. The first layer, called the input layer, applies its affine transformation to the input vector and then its activation function. The second layer receives the output of the first layer and repeats the process. This is repeated up to and including the final (output) layer, whose activation function is tailored to either classification or regression.
 
 \subsubsection{Minimisation: Back-propagation}
 Similarly to logistic regression, the cost function should be minimised using some sort of gradient method.
@@ -351,7 +351,7 @@ This relation can be derived through one final application of the chain rule,
     \delta_j^l = \pdv{Q}{z_j^l} = \pdv{Q}{z_k^{l+1}}\pdv{z_k^{l+1}}{z_j^l}
                = \delta_k^{l+1} \pdv{z_k^{l+1}}{a_i^l}\pdv{a_i^l}{z_j^{l}}
                = \delta_k^{l+1} \pdv{a_i^l}\qty(W_{km}^{l+1}a_m^l + b_k^l) \pdv{f^l(z_i^l)}{z_j^{l}}
-               = \delta_k^{l+1} W_{kj} {f^l} '(z_j^l).
+               = \delta_k^{l+1} W_{kj}^{l+1} {f^l} '(z_j^l).
 \end{equation}
 
 The above results can be summarised on a matrix form as
@@ -406,7 +406,7 @@ and
 Binary classification problems such as the one of the two-dimensional Ising model may use the same cost function as that of logistic regression,with the logistic function used as the activation function of the output layer in order to obtain a probability \(a^L\) between zero and one.
 The cost function is then
 \begin{equation}
-    Q = -\qty(y\ln(a^L) - (1 - y)\ln(1-a^L))
+    Q = -\qty(y\ln(a^L) + (1 - y)\ln(1-a^L))
 \end{equation}
 with
 \begin{equation}
@@ -454,6 +454,17 @@ A further improvement is to add a so-called momentum, i.e.\ use a linear combina
 % |_|  \___||___/\__,_|_|\__|___/
 \section{Results}
 \subsection{Linear regression}
+One-dimensional binary lattices were generated randomly, and their energies were calculated.
+The regression methods were told to approximate the energies as linear combinations of spin-spin products, \(E=-J_{ij}s_i s_j\).
+If the regression methods succeed, they should give coupling matrices which are non-zero only on the super- and sub-diagonal, as well as in the corners, and \(J_{ij} + J_{ji}\) should equal \(1\).
+
+Widely different behavious are seen for the three regression algorithms.
+Ordinary least squares gives strange results, while Ridge and LASSO regression give good, but, different, results.
+Ridge regression, whose cost function includes the sum of the squares of the coefficients \(\beta_j\), gives a symmetric coupling matrix because \(\num{0.5}^2+\num{0.5}^2\) is the smallest squared sum of two numbers which add up to one.
+The resulting performance is an \(R^2\) score around \(\num{0.8}\) when \(\lambda\) is not chosen too large.
+
+On the other hand, LASSO regression is able to perfectly reproduce the asymmetric coupling matrix used to generate the data with the correct choice of regularisation parameter, resulting in an \(R^2\) score of \(1\). Using more training samples reduces the sensitivity to \(\lambda\), while the peak performance is the same for \(\num{400}\) and \(\num{1000}\) samples.
+
 \begin{figure}[H]
     \centering
     \begin{tikzpicture}
@@ -547,10 +558,23 @@ end
 \end{luacode*}
 
 \subsection{Logistic regression}
+Mehta et.\ al.\cite{mehta} have provided a data set with \(\num{160000}\) spin configurations on a \(40\times40\) lattice. The states are labelled as ordered or disordered. Of these, \(\num{30000}\) are considered \emph{critical}, i.e.\ in the range between ordered and disordered (this phase transition is sharp only in the limit of infinite lattice size). The non-critical states were divided into training and test data, while the critical states were kept as an extra test set.
+
+There are many parameters to be chosen in logistic regression. I chose to vary regularisation, learning rate and momentum to determine the optimal combination of parameters. The batch size could also have been varied, but this was kept fixed for simplicity and reduction of runtime. Additionally, the batch size only determines the rate of convergence, while wrong choices for the other parameters often lead to no convergence at all. For each \(\lambda\), an optimal learning rate and momentum was determined through a (parallel) parameter sweep.
+
 \begin{table}[H]
     \centering
-    \caption{Accuracy on training and test data, as well as the critical states, for a variety of regularisations \(\lambda\). Optimal momentums and learning rates are estimated through a simple parameter sweep. The number of stochastic gradient descent iterations was limited to \(100\), while the batch size was \(32\).}
-    \pgfplotstabletypeset[columns/lambda/.style={column name={$\lambda$},dec sep align},columns/Momentum/.style={fixed},sci, sci zerofill,precision=1]{data/logreg_table.dat}
+    \caption{Accuracy on training and test data, as well as the critical states, for a variety of regularisations \(\lambda\). Optimal momentums and learning rates are estimated through a simple parameter sweep. The number of stochastic gradient descent iterations was limited to \(100\), while the batch size was \(32\). Other prints from the program shows that the choice of hyperparameters such as learning rate is very important for logistic regression to be better than guessing.}
+    \pgfplotstabletypeset[
+        columns/lambda/.style={column name={$\lambda$},
+            dec sep align,
+            sci, sci zerofill,
+            precision=1,
+            string replace={0.E+00}{}
+        },
+        columns/{Learning rate}/.style={sci, sci zerofill, precision=1},
+        fixed, precision=2, fixed zerofill
+    ]{data/logreg_table.dat}
 \end{table}
 
 

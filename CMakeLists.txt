@@ -19,12 +19,13 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
 endif(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/regression)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/neuralnetwork)
 
 add_library(ising ${CMAKE_CURRENT_SOURCE_DIR}/lib/ising.f90)
 
 target_link_libraries(ising regression)
 
-set(libs ising regression)
+set(libs ising regression neuralnetwork)
 
 file(GLOB program_files ${CMAKE_CURRENT_SOURCE_DIR}/programs/*.*90)
 

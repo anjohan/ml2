@@ -9,7 +9,7 @@ program logreg
     integer, allocatable :: y_crit(:), y_noncrit(:)
     real(dp), allocatable :: X_train(:,:), X_test(:,:), X_crit(:,:)
     integer, allocatable :: y_test(:), y_train(:), y_pred(:)
-    integer :: num_spins, num_ordered, num_crit, num_disordered, num_noncrit
+    integer :: num_spins, num_crit, num_noncrit
     integer :: u, p
     real(dp) :: test_fraction
     integer :: N_test
@@ -18,58 +18,38 @@ program logreg
 
     write(*,*) "Using", num_images(), " images"
 
-    open(newunit=u, file="data/states.bin", action="read", access="stream")
-    read(u) num_spins, num_ordered, num_crit, num_disordered
-    write(*,*) num_spins, num_ordered, num_crit, num_disordered
+    call read_2d_states("data/states.bin", "data/labels.bin", &
+                        X_noncrit, X_crit_tmp, y_noncrit, y_crit, .true.)
 
-    p = num_spins+1
-    num_noncrit = num_ordered + num_disordered
+    num_noncrit = size(X_noncrit,1)
+    num_crit = size(X_crit_tmp,1)
+    num_spins = size(X_crit_tmp, 2)
+    p = num_spins + 1
+
+    allocate(X_crit(num_crit,p))
+    X_crit(:,1) = 1
+    X_crit(:,2:) = X_crit_tmp(:,:)
+    deallocate(X_crit_tmp)
+    write(*,*) shape(X_noncrit), shape(y_noncrit)
+    write(*,*) shape(X_crit), shape(y_crit)
+
+    write(*,"(*(i0,:,x))") y_noncrit(1:10)
+    write(*,"(*(i0,:,x))") y_crit(1:10)
+    write(*,"(*(i0,:,x))") X_noncrit(1,2:11)
+    write(*,*) count(X_noncrit(1:10,:)==-1,dim=2)
+    call shuffle(X_noncrit, y_noncrit)
+
     N_test = nint(test_fraction*num_noncrit)
-
-    allocate(X_crit_tmp(num_spins,num_crit), &
-             X_noncrit(num_spins,num_noncrit), y_noncrit(num_noncrit))
-
-
-
-    allocate(y_crit(num_crit), X_crit(num_crit, p))
-
-
-        read(u) X_noncrit(:,:num_ordered)
-        read(u) X_crit_tmp(:,:)
-        read(u) X_noncrit(:,num_ordered+1:)
-        close(u)
-
-        open(newunit=u, file="data/labels.bin", access="stream", status="old")
-        read(u) y_noncrit(1:num_ordered), y_crit(:), y_noncrit(num_ordered+1:)
-        close(u)
-
-        X_noncrit = transpose(X_noncrit)
-        X_crit_tmp = transpose(X_crit_tmp)
-        X_crit(:,1) = 1
-        X_crit(:,2:) = X_crit_tmp(:,:)
-        deallocate(X_crit_tmp)
-        write(*,*) shape(X_noncrit), shape(y_noncrit)
-        write(*,*) shape(X_crit), shape(y_crit)
-
-        write(*,"(*(i0,:,x))") y_noncrit(1:10)
-        write(*,"(*(i0,:,x))") y_crit(1:10)
-        write(*,"(*(i0,:,x))") X_noncrit(1,2:11)
-        write(*,*) count(X_noncrit(1:10,:)==-1,dim=2)
-        call shuffle(X_noncrit, y_noncrit)
-
-
-
     allocate(X_test(N_test, p), X_train(num_noncrit-N_test,p))
 
-        X_test(:,1) = 1
-        x_train(:,1) = 1
+    X_test(:,1) = 1
+    x_train(:,1) = 1
 
-        X_test(:,2:) = X_noncrit(1:N_test,:)
-        X_train(:,2:) = X_noncrit(N_test+1:,:)
-        deallocate(X_noncrit)
-        y_test = y_noncrit(1:N_test)
-        y_train = y_noncrit(N_test+1:)
-
+    X_test(:,2:) = X_noncrit(1:N_test,:)
+    X_train(:,2:) = X_noncrit(N_test+1:,:)
+    deallocate(X_noncrit)
+    y_test = y_noncrit(1:N_test)
+    y_train = y_noncrit(N_test+1:)
 
     simulations: block
         class(binary_logreg), allocatable :: fitter
@@ -81,7 +61,7 @@ program logreg
         integer :: num_lambdas, num_momentums, num_learning_rates, i, j, k, iteration
         integer, allocatable :: training_pred(:), test_pred(:), crit_pred(:)
 
-        lambdas = [(10.0d0**i, i = -4,0)]
+        lambdas = [0.0d0, (10.0d0**i, i = -5,2)]
         momentums = [(0.2d0*i, i = 0, 5)]
         learning_rates = [(10.0d0**i, i = -4, 0)]
 

@@ -80,14 +80,39 @@ module mod_ising
             end do
         end subroutine
 
-        subroutine create_spin_basis(basis, L)
-            class(spin_function), allocatable, intent(out) :: basis(:)
-            integer, intent(in) :: L
+        subroutine read_2d_states(states_name, labels_name, X_noncrit, &
+                                  X_crit, y_noncrit, y_crit, T)
+            character(len=*), intent(in) :: states_name, labels_name
+            integer, allocatable, intent(out) :: X_noncrit(:,:), X_crit(:,:)
+            integer, allocatable, intent(out) :: y_noncrit(:), y_crit(:)
+            logical, optional, intent(in) :: T
 
-            integer :: i
-            allocate(basis(1:L+1))
-            do i = 0, L
-                basis(i+1)%i = i
-            end do
+            integer :: u, num_spins, num_ordered, num_crit, num_disordered, num_noncrit
+
+            open(newunit=u, file=states_name, action="read", access="stream")
+            read(u) num_spins, num_ordered, num_crit, num_disordered
+            write(*,*) num_spins, num_ordered, num_crit, num_disordered
+
+            num_noncrit = num_ordered + num_disordered
+
+            allocate(X_crit(num_spins,num_crit), &
+                X_noncrit(num_spins,num_noncrit), y_noncrit(num_noncrit))
+
+            allocate(y_crit(num_crit))
+
+            read(u) X_noncrit(:,:num_ordered)
+            read(u) X_crit(:,:)
+            read(u) X_noncrit(:,num_ordered+1:)
+            close(u)
+
+            open(newunit=u, file=labels_name, access="stream", status="old")
+            read(u) y_noncrit(1:num_ordered), y_crit(:), y_noncrit(num_ordered+1:)
+            close(u)
+
+            if (present(T)) then
+                X_noncrit = transpose(X_noncrit)
+                X_crit = transpose(X_crit)
+            end if
+
         end subroutine
 end module
