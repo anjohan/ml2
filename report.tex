@@ -453,7 +453,7 @@ A further improvement is to add a so-called momentum, i.e.\ use a linear combina
 % | | |  __/\__ \ |_| | | |_\__ \
 % |_|  \___||___/\__,_|_|\__|___/
 \section{Results}
-\subsection{Linear regression}
+\subsection{Linear regression}\label{subsec:linregresults}
 One-dimensional binary lattices were generated randomly, and their energies were calculated.
 The regression methods were told to approximate the energies as linear combinations of spin-spin products, \(E=-J_{ij}s_i s_j\).
 If the regression methods succeed, they should give coupling matrices which are non-zero only on the super- and sub-diagonal, as well as in the corners, and \(J_{ij} + J_{ji}\) should equal \(1\).
@@ -526,7 +526,7 @@ On the other hand, LASSO regression is able to perfectly reproduce the asymmetri
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.5\textwidth]{data/J_ols_1.png}
-    \caption{Coupling matrix for ordinary least squares regression. White is zero, black is one. It is clear that the lack of regularisation causes overfitting when few states are used as input. Additionally, ordinary least squares and Ridge regression find a symmetric coupling matrix. The strange lower right quarter of the coupling matrix can be caused by either something wrong which I have done, or the use of \lstinline{dgelsd}, which finds a singular value decomposition via the divide-and-conquer algorithm.}
+    \caption{Coupling matrix for ordinary least squares regression. White is negative one, black is one. It is clear that the lack of regularisation causes overfitting when few states are used as input. Additionally, ordinary least squares and Ridge regression find a coupling matrix whose super and sub diagonals are equal. The strange lower right quarter of the coupling matrix can be caused by either something wrong which I have done, or the use of \lstinline{dgelsd}, which finds a singular value decomposition via the divide-and-conquer algorithm. Notice that the noise (that is, non-zero elements other than on the sub and super diagonals) is antisymmetric, so that these elements cancel and do not affect the energy.}
 \end{figure}
 
 \begin{luacode*}
@@ -577,6 +577,39 @@ There are many parameters to be chosen in logistic regression. I chose to vary r
     ]{data/logreg_table.dat}
 \end{table}
 
+\subsection{Neural network regression}
+\subsubsection{Rediscovering the Ising model}
+A neural network with only an output layer and no activation function is identical to a linear regressor, except for the use of a minimisation algorithm instead of closed form solutions.
+If the same input is used as in~\vref{subsec:linregresults}, the weight matrix of such a neural network should be equal to the coupling matrix of the Ising model.
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}
+        \begin{axis}[
+            thick,
+            width=6in, height=3in,
+            legend style={draw=none, fill=none, at={(0.98,0.02)}, anchor=south east},
+            legend cell align=left,
+            xmode=log,
+            xlabel={epochs},
+            ylabel={\(R^2\) score},
+        ]
+            \addplot+ table[y index=1] {data/reg_nn_test_couplings.dat};
+            \addlegendentry{\(\alpha=\num{0.001}\)};
+            \addplot+ table[y index=2] {data/reg_nn_test_couplings.dat};
+            \addlegendentry{\(\alpha=\num{0.01}\)};
+            \addplot+ table[y index=3] {data/reg_nn_test_couplings.dat};
+            \addlegendentry{\(\alpha=\num{0.04}\)};
+        \end{axis}
+    \end{tikzpicture}
+    \caption{\(R^2\) score on training data as a function of the number of epochs, i.e.\ the number of stochastic gradient descent iterations. \(\num{3000}\) states were used for training with a batch size of \(300\). With the right learning rate, the neural network converges quickly to the correct solution, while a badly chosen learning rate leads to slower convergence or even divergence. A learning rate of \(\num{0.05}\) ruins everything (not shown).}\label{fig:r2nn}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{data/J_nn_1.png}
+    \caption{Weight matrix of the neural network's only layer, which should be equal to the coupling matrix \(J\). The neural network gives a symmetric matrix with weights \(\num{0.5}\) on the super and sub diagonals.}
+\end{figure}
 
 
 %                                   _ _

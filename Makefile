@@ -1,6 +1,6 @@
 sources = $(shell find -name "*.f90")
 SHELL := /usr/bin/bash
-deps = sources2.bib data/J_Ridge_1.png data/J_ols_1.png data/J_LASSO_1000_1.png data/J_LASSO_400_1.png data/states.bin
+deps = sources2.bib data/J_Ridge_1.png data/J_ols_1.png data/J_LASSO_1000_1.png data/J_LASSO_400_1.png data/states.bin data/reg_nn_test_couplings.dat data/J_nn_1.png
 
 all:
 	mkdir -p data
@@ -45,7 +45,15 @@ data/labels.pkl:
 data/states.bin: programs/pkl2bin.py data/labels.pkl data/states.pkl
 	python $<
 
-data/logreg_table.dat: programs/logreg.f90 build
+data/logreg_table.dat: build/logreg programs/logreg.f90 build
+	mpirun ./$<
+
+data/%.dat: build/% programs/%.f90 build
+	./$<
+
+data/J_nn.dat: data/reg_nn_test_couplings.dat
+
+data/reg_nn_test_couplings.dat: build/reg_nn_test_couplings programs programs/reg_nn_test_couplings.f90 build
 	mpirun ./$<
 
 clean:
