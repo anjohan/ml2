@@ -11,18 +11,20 @@ module mod_find_r2s
             integer, parameter :: num_epochs = 100
             real(dp) :: r2s(num_epochs)
             integer :: L, num_states, i, j, u
-            real(dp), allocatable :: spins(:,:), couplings(:,:), &
+            real(dp), allocatable :: spins(:,:)[:], couplings(:,:), &
                                      energies(:,:), pred_energies(:,:), &
                                      test_couplings(:,:), test_energies(:,:)
             class(neural_network), allocatable :: nn
 
             L = 40
             num_states = 3000
-            allocate(spins(L, 2*num_states), couplings(L**2, 2*num_states), &
+            allocate(spins(L, 2*num_states)[*], couplings(L**2, 2*num_states), &
                      energies(1, 2*num_states), &
                      pred_energies(1,num_states))
 
             call random_number(spins)
+            sync all
+            spins(:,:) = spins(:,:)[1]
             where (spins < 0.5d0)
                 spins = -1
             elsewhere
@@ -30,10 +32,8 @@ module mod_find_r2s
             end where
 
             do i = 1, 2*num_states
-                associate(s => spins(:,i))
-                    couplings(:,i) = -spin_coupling_vector(s)
-                    energies(1,i) = energy(s)
-                end associate
+                couplings(:,i) = -spin_coupling_vector(spins(:,i))
+                energies(1,i) = energy(spins(:,i))
             end do
 
             test_couplings = couplings(:,num_states+1:)

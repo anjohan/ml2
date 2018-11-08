@@ -636,6 +636,19 @@ If the same input is used as in~\vref{subsec:linregresults}, the weight matrix o
     \caption{Weight matrix of the neural network's only layer, which should be equal to the coupling matrix \(J\). The neural network gives a symmetric matrix with weights \(\num{0.5}\) on the super and sub diagonals.}
 \end{figure}
 
+\begin{table}[H]
+    \centering
+    \pgfplotstabletypeset[
+        columns/lambda/.style={column name={$\lambda$},
+            dec sep align,
+            sci, sci zerofill,
+            precision=1,
+            string replace={0.E+00}{}
+        },
+        columns/{Learning rate}/.style={sci, sci zerofill, precision=1},
+        fixed, precision=2, fixed zerofill
+    ]{data/reg_nn_convergence.dat}
+\end{table}
 
 %                                   _ _
 %   __ _ _ __  _ __   ___ _ __   __| (_)_  __
