@@ -1,11 +1,11 @@
 sources = $(shell find -name "*.f90")
 SHELL := /usr/bin/bash
-deps = sources2.bib data/J_Ridge_1.png data/J_ols_1.png data/J_LASSO_1000_1.png data/J_LASSO_400_1.png data/states.bin data/reg_nn_test_couplings.dat data/J_nn_1.png
+deps = sources2.bib data/J_Ridge_1000_1.png data/J_Ridge_1600_1.png data/J_ols_1000_1.png data/J_ols_1600_1.png data/J_LASSO_1000_1.png data/J_LASSO_400_1.png data/states.bin data/reg_nn_test_couplings.dat data/J_nn_1.png
 
 all:
 	mkdir -p data
 	make build
-	make -j $(deps)
+	make $(deps)
 	make report.pdf
 
 build: $(sources)
@@ -23,10 +23,10 @@ sources2.bib: sources.bib
 data/J_%_1.png: ./programs/matrix_to_png.py data/J_%.dat
 	python $< $*
 
-data/J_ols.dat: build/linreg
-	./$<
+data/J_ols_%.dat: build/linreg
+	./$< <<< $*
 
-data/J_Ridge.dat: data/J_ols.dat
+data/J_Ridge_%.dat: data/J_ols_%.dat
 
 data/J_LASSO_%.dat: programs/lasso.py
 	python $< $*
@@ -53,7 +53,7 @@ data/%.dat: build/% programs/%.f90 build
 
 data/J_nn.dat: data/reg_nn_test_couplings.dat
 
-data/reg_nn_test_couplings.dat: build/reg_nn_test_couplings programs programs/reg_nn_test_couplings.f90 build
+data/reg_nn_test_couplings.dat: build/reg_nn_test_couplings programs/reg_nn_test_couplings.f90 build
 	mpirun ./$<
 
 clean:

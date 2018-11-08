@@ -164,7 +164,7 @@
 
 \begin{abstract}
     This project applies several statistical learning methods to data from the famous Ising model.
-    Linear regression is used to determine the coupling, while classification of spin configurations as ordered or disordered is achived with both logistic regression and multi-layered naural networks.
+    Linear regression is used to determine the coupling, while classification of spin configurations as ordered or disordered is achieved with both logistic regression and multi-layered neural networks.
     Finally, neural networks are trained to predict the energy of a spin configuration.
 
     LASSO regression is found to perfectly reproduce the Ising model and give an \(R^2\) score of \(1\) for the correct choice of regularisation.
@@ -181,14 +181,14 @@ Physicists study the model because it represents a magnetic lattice and can mode
 Social scientists like the model because it is a simple correlated system, which can approximate correlated quantities such as dialects.
 The Metropolis algorithm, acknowledged as one of the premiere algorithms in computational science, is a method for finding the properties of the Ising model numerically.
 
-This project does not deal with the simulation of a spin lattice, but rather the classification and analysis of precalculated spin configurations with corresponding energies.
+This project does not deal with the simulation of a spin lattice, but rather the classification and analysis of pre-calculated spin configurations with corresponding energies.
 Thus the Ising model can be used to verify various numerical methods for both regression and classification, and also measure their performance to infer their relative strengths and weaknesses.
 
 The main goal is to compare simple neural networks with the different linear regression methods for regression and logistic regression for classification.
 The regression part of the problem is to find the coupling constants from given spin configurations and their energies, as well as prediction of energies.
 Binary classification of states as ordered or disordered is used as a classification problem.
 
-Consequently, the first part of this report derives the necessary mathemetical tools for both regression and classification, including the back propagation algorithm for training neural networks. Different methods for classification and regression are then applied to the Ising data provided in\cite{mehta} and compared.
+Consequently, the first part of this report derives the necessary mathematical tools for both regression and classification, including the back propagation algorithm for training neural networks. Different methods for classification and regression are then applied to the Ising data provided in\cite{mehta} and compared.
 
 \section{Theory and methods}
 See~\vref{sec:linreg} for a review of linear regression, including terminology and regression problem statement.
@@ -452,18 +452,23 @@ A further improvement is to add a so-called momentum, i.e.\ use a linear combina
 % | '__/ _ \/ __| | | | | __/ __|
 % | | |  __/\__ \ |_| | | |_\__ \
 % |_|  \___||___/\__,_|_|\__|___/
-\section{Results}
+\section{Results and discussion}
 \subsection{Linear regression}\label{subsec:linregresults}
 One-dimensional binary lattices were generated randomly, and their energies were calculated.
 The regression methods were told to approximate the energies as linear combinations of spin-spin products, \(E=-J_{ij}s_i s_j\).
-If the regression methods succeed, they should give coupling matrices which are non-zero only on the super- and sub-diagonal, as well as in the corners, and \(J_{ij} + J_{ji}\) should equal \(1\).
+An interesting feature of this regression problem is the non-uniqueness of the coupling matrix.
+While the energy is generated from \(E=-\sum_j J_{j,j+1}s_j s_{j+1}\), any matrix \(J\) which fulfils \(J_{j,j+1} + J_{j,j-1}=1\) and \(J_{ij} = -J_{ji}\) for \(i\neq j\pm1\) (requiring \(J_{ii}=0\)) will give the same energy.
 
-Widely different behavious are seen for the three regression algorithms.
-Ordinary least squares gives strange results, while Ridge and LASSO regression give good, but, different, results.
+Widely different behaviours are seen for the three regression algorithms.
+Ordinary least squares gives strange results, while Ridge and LASSO regression give good, but different, results.
 Ridge regression, whose cost function includes the sum of the squares of the coefficients \(\beta_j\), gives a symmetric coupling matrix because \(\num{0.5}^2+\num{0.5}^2\) is the smallest squared sum of two numbers which add up to one.
 The resulting performance is an \(R^2\) score around \(\num{0.8}\) when \(\lambda\) is not chosen too large.
 
 On the other hand, LASSO regression is able to perfectly reproduce the asymmetric coupling matrix used to generate the data with the correct choice of regularisation parameter, resulting in an \(R^2\) score of \(1\). Using more training samples reduces the sensitivity to \(\lambda\), while the peak performance is the same for \(\num{400}\) and \(\num{1000}\) samples.
+
+When the number of samples reaches the number of parameters, \(L^2=\num{1600}\), Ridge regression gives perfect energies because the underlying model of the energy is the same as the model used for fitting. Reducing the number of samples reduces the accuracy. LASSO regression, on the other hand, manages to find a perfect fit for certain values of \(\lambda\) even with \(\num{400}\) samples.
+
+Coupling matrices showing transitions and other interesting features are shown below. A complete set is given in~\vref{fig:morecouplings} and beyond.
 
 \begin{figure}[H]
     \centering
@@ -471,14 +476,16 @@ On the other hand, LASSO regression is able to perfectly reproduce the asymmetri
         \begin{axis}[
             thick,
             width=6in, height=3in,
-            legend style={draw=none, fill=none, at={(0.02,0.02)}, anchor=south west},
+            legend style={draw=none, fill=none, at={(0.15,0.1)}, anchor=south west},
             legend cell align=left,
             xmode=log,
             xlabel={\(\lambda\)},
             ylabel={\(R^2\) score},
         ]
-            \addplot+ table[y index=1] {data/mse_Ridge.dat};
-            \addlegendentry{Ridge};
+            \addplot+ table[y index=1] {data/mse_Ridge_1000.dat};
+            \addlegendentry{Ridge, \(\num{1000}\) states};
+            \addplot+ table[y index=1] {data/mse_Ridge_1600.dat};
+            \addlegendentry{Ridge, \(\num{1600}\) states};
             \addplot+ table[y index=1] {data/mse_LASSO_400.dat};
             \addlegendentry{LASSO, \(\num{400}\) states};
             \addplot+ table[y index=1] {data/mse_LASSO_1000.dat};
@@ -493,19 +500,25 @@ On the other hand, LASSO regression is able to perfectly reproduce the asymmetri
     \begin{tikzpicture}
         \begin{axis}[
             thick,
-            width=6in, height=3in,
+            width=4in, height=3in,
             xmode=log, ymode=log,
-            legend style={draw=none, fill=none, at={(0.98,0.02)}, anchor=south east},
+            legend style={draw=none, fill=none, at={(1.0,0.02)}, anchor=south west},
             legend cell align=left,
             xlabel={\(\lambda\)},
             ylabel={Error},
         ]
-            \addplot+ table[y index=2] {data/mse_Ridge.dat};
-            \addlegendentry{MSE (Ridge)};
-            \addplot+ table[y index=3] {data/mse_Ridge.dat};
-            \addlegendentry{Bias (Ridge)};
-            \addplot+ table[y index=4] {data/mse_Ridge.dat};
-            \addlegendentry{Variance (Ridge)};
+            \addplot+ table[y index=2] {data/mse_Ridge_1000.dat};
+            \addlegendentry{MSE (Ridge, \(\num{1000}\) states)};
+            \addplot+ table[y index=3] {data/mse_Ridge_1000.dat};
+            \addlegendentry{Bias (Ridge, \(\num{1000}\) states)};
+            \addplot+ table[y index=4] {data/mse_Ridge_1000.dat};
+            \addlegendentry{Variance (Ridge, \(\num{1000}\) states)};
+            \addplot+ table[y index=2] {data/mse_Ridge_1600.dat};
+            \addlegendentry{MSE (Ridge, \(\num{1600}\) states)};
+            \addplot+ table[y index=3] {data/mse_Ridge_1600.dat};
+            \addlegendentry{Bias (Ridge, \(\num{1600}\) states)};
+            \addplot+ table[y index=4] {data/mse_Ridge_1600.dat};
+            \addlegendentry{Variance (Ridge, \(\num{1600}\) states)};
             \addplot+ table[y index=2] {data/mse_LASSO_400.dat};
             \addlegendentry{MSE (LASSO, \(\num{400}\) states)};
             \addplot+ table[y index=3] {data/mse_LASSO_400.dat};
@@ -520,38 +533,50 @@ On the other hand, LASSO regression is able to perfectly reproduce the asymmetri
             \addlegendentry{Variance (LASSO, \(\num{1000}\) states)};
         \end{axis}
     \end{tikzpicture}
-    \caption{Bias-variance decomposition of the mean squared error for Ridge and LASSO regression. The bias and variance are expected to add up to the mean squared error, which is confirmed by the plot. Further, using a regularisation parameter \(\lambda\) which is too large causes the mean squared error to increase because the approximating model becomes unable to fit the data, i.e.\ the bias increases, and the reduction of variance can not compensate sufficiently. As seen also in~\vref{fig:r2}, LASSO outperforms Ridge regression for certain values of \(\lambda\).}
+    \caption{Bias-variance decomposition of the mean squared error for Ridge and LASSO regression. The bias and variance are expected to add up to the mean squared error, which is confirmed by the plot. Further, using a regularisation parameter \(\lambda\) which is too large causes the mean squared error to increase because the approximating model becomes unable to fit the data, i.e.\ the bias increases, and the reduction of variance can not compensate sufficiently. As seen also in~\vref{fig:r2}, LASSO outperforms Ridge regression for certain values of \(\lambda\) when fewer samples than \(L^2\) is used.}\label{fig:mse}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.5\textwidth]{data/J_ols_1.png}
-    \caption{Coupling matrix for ordinary least squares regression. White is negative one, black is one. It is clear that the lack of regularisation causes overfitting when few states are used as input. Additionally, ordinary least squares and Ridge regression find a coupling matrix whose super and sub diagonals are equal. The strange lower right quarter of the coupling matrix can be caused by either something wrong which I have done, or the use of \lstinline{dgelsd}, which finds a singular value decomposition via the divide-and-conquer algorithm. Notice that the noise (that is, non-zero elements other than on the sub and super diagonals) is antisymmetric, so that these elements cancel and do not affect the energy.}
+    \begin{subfigure}[t]{0.45\textwidth}\centering
+        \includegraphics[width=0.8\textwidth]{data/J_ols_1000_1.png}
+        \caption{\(\num{1000}\) states.}
+    \end{subfigure}
+    \begin{subfigure}[t]{0.45\textwidth}\centering
+        \includegraphics[width=0.8\textwidth]{data/J_ols_1600_1.png}
+        \caption{\(\num{1600}\) states.}
+    \end{subfigure}
+    \caption{Coupling matrix for ordinary least squares regression. White is negative one, black is one. It is clear that the lack of regularisation causes overfitting when few states are used as input. Additionally, ordinary least squares and Ridge regression find a coupling matrix whose super and sub diagonals are equal. The strange lower right quarter of the coupling matrix can be caused by either something wrong which I have done, or the use of \lstinline{dgelsd}, which finds a singular value decomposition via the divide-and-conquer algorithm. Notice that most of the noise (that is, non-zero elements other than on the sub and super diagonals) is antisymmetric, so that these elements cancel and do not affect the energy.}
 \end{figure}
 
 \begin{luacode*}
 i = 1
 for line in io.lines("data/Ridge_lambdas.dat") do
-    -- if i < 6 then goto next end
-    s = ""
-        .. [[\begin{figure}[H] ]]
-        .. [[\centering]]
-        .. [[\begin{subfigure}[t]{0.3\textwidth} \centering]]
-            .. [[\includegraphics[height=0.20\textheight]{data/J_Ridge_]] .. tostring(i) .. [[.png}]]
-            .. [[\caption{Ridge regression, \(\num{1000}\) training states.}]]
-        .. [[\end{subfigure}\hspace{0.04\textwidth}]]
-        .. [[\begin{subfigure}[t]{0.3\textwidth} \centering]]
-            .. [[\includegraphics[height=0.20\textheight]{data/J_LASSO_400_]] .. tostring(i) .. [[.png}]]
-            .. [[\caption{LASSO regression, \(\num{400}\) training states.}]]
-        .. [[\end{subfigure}\hspace{0.04\textwidth}]]
-        .. [[\begin{subfigure}[t]{0.3\textwidth} \centering]]
-            .. [[\includegraphics[height=0.20\textheight]{data/J_LASSO_1000_]] .. tostring(i) .. [[.png}]]
-            .. [[\caption{LASSO regression, \(\num{1000}\) training states.}]]
-        .. [[\end{subfigure}]]
-        .. [[\caption{Coupling matrices for \(\lambda = \num{]] .. line ..[[}\).}]]
-    if i == 1 then s = s .. [[ \label{fig:coupling} ]] end
-    s = s .. [[\end{figure}]]
-    tex.sprint(s)
+    if i<3 or i==5 or i>7 then
+        s = ""
+            .. [[\begin{figure}[H] ]]
+            .. [[\centering]]
+            .. [[\begin{subfigure}[t]{0.2\textwidth} \centering]]
+                .. [[\includegraphics[height=0.8\textwidth]{data/J_Ridge_1000_]] .. tostring(i) .. [[.png}]]
+                .. [[\caption{Ridge regression, \(\num{1000}\) training states.}]]
+            .. [[\end{subfigure}\hspace{0.04\textwidth}]]
+            .. [[\begin{subfigure}[t]{0.2\textwidth} \centering]]
+                .. [[\includegraphics[height=0.8\textwidth]{data/J_Ridge_1600_]] .. tostring(i) .. [[.png}]]
+                .. [[\caption{Ridge regression, \(\num{1600}\) training states.}]]
+            .. [[\end{subfigure}\hspace{0.04\textwidth}]]
+            .. [[\begin{subfigure}[t]{0.2\textwidth} \centering]]
+                .. [[\includegraphics[height=0.8\textwidth]{data/J_LASSO_400_]] .. tostring(i) .. [[.png}]]
+                .. [[\caption{LASSO regression, \(\num{400}\) training states.}]]
+            .. [[\end{subfigure}\hspace{0.04\textwidth}]]
+            .. [[\begin{subfigure}[t]{0.2\textwidth} \centering]]
+                .. [[\includegraphics[height=0.8\textwidth]{data/J_LASSO_1000_]] .. tostring(i) .. [[.png}]]
+                .. [[\caption{LASSO regression, \(\num{1000}\) training states.}]]
+            .. [[\end{subfigure}]]
+            .. [[\caption{Coupling matrices for \(\lambda = \num{]] .. line ..[[}\).}]]
+        if i == 1 then s = s .. [[ \label{fig:coupling} ]] end
+        s = s .. [[\end{figure}]]
+        tex.sprint(s)
+    end
     ::next::
     i = i + 1
 end
@@ -607,7 +632,7 @@ If the same input is used as in~\vref{subsec:linregresults}, the weight matrix o
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.5\textwidth]{data/J_nn_1.png}
+    \includegraphics[width=0.3\textwidth]{data/J_nn_1.png}
     \caption{Weight matrix of the neural network's only layer, which should be equal to the coupling matrix \(J\). The neural network gives a symmetric matrix with weights \(\num{0.5}\) on the super and sub diagonals.}
 \end{figure}
 
@@ -625,6 +650,38 @@ If the same input is used as in~\vref{subsec:linregresults}, the weight matrix o
 \renewcommand{\thesection}{\Alph{section}}
 \labelformat{section}{appendix~#1}
 \labelformat{subsection}{appendix~#1}
+
+\section{More coupling matrices}
+\begin{luacode*}
+i = 1
+for line in io.lines("data/Ridge_lambdas.dat") do
+    s = ""
+        .. [[\begin{figure}[H] ]]
+        .. [[\centering]]
+        .. [[\begin{subfigure}[t]{0.2\textwidth} \centering]]
+            .. [[\includegraphics[height=0.8\textwidth]{data/J_Ridge_1000_]] .. tostring(i) .. [[.png}]]
+            .. [[\caption{Ridge regression, \(\num{1000}\) training states.}]]
+        .. [[\end{subfigure}\hspace{0.04\textwidth}]]
+        .. [[\begin{subfigure}[t]{0.2\textwidth} \centering]]
+            .. [[\includegraphics[height=0.8\textwidth]{data/J_Ridge_1600_]] .. tostring(i) .. [[.png}]]
+            .. [[\caption{Ridge regression, \(\num{1600}\) training states.}]]
+        .. [[\end{subfigure}\hspace{0.04\textwidth}]]
+        .. [[\begin{subfigure}[t]{0.2\textwidth} \centering]]
+            .. [[\includegraphics[height=0.8\textwidth]{data/J_LASSO_400_]] .. tostring(i) .. [[.png}]]
+            .. [[\caption{LASSO regression, \(\num{400}\) training states.}]]
+        .. [[\end{subfigure}\hspace{0.04\textwidth}]]
+        .. [[\begin{subfigure}[t]{0.2\textwidth} \centering]]
+            .. [[\includegraphics[height=0.8\textwidth]{data/J_LASSO_1000_]] .. tostring(i) .. [[.png}]]
+            .. [[\caption{LASSO regression, \(\num{1000}\) training states.}]]
+        .. [[\end{subfigure}]]
+        .. [[\caption{Coupling matrices for \(\lambda = \num{]] .. line ..[[}\).}]]
+    if i == 1 then s = s .. [[ \label{fig:morecouplings} ]] end
+    s = s .. [[\end{figure}]]
+    tex.sprint(s)
+    ::next::
+    i = i + 1
+end
+\end{luacode*}
 
 \section{Review of linear regression}\label{sec:linreg}
 This section is mainly a copy-paste from project 1 and is included for reference.
@@ -946,6 +1003,7 @@ A more computationally practical expression could have been derived by adding an
     = \norm{\vec{y}- E_D\qty[\vec{\tilde{y}}_D]}_2^2 + E_D\qty[\norm{E_D\qty[\vec{\tilde{y}}_D] - \vec{\tilde{y}}_D}_2^2]
 \end{equation}
 by manipulations analogous to the ones used above. This is another formulation of the bias-variance decomposition which can be used without any information about the underlying model. Dividing by \(N\) gives the average \(\MSE\) on the left-hand side.
+
 
 
 \clearpage
