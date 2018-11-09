@@ -659,6 +659,11 @@ If the same input is used as in~\vref{subsec:linregresults}, the weight matrix o
     ]{data/reg_nn_convergence.dat}
 \end{table}
 
+\subsubsection{Energy from a black body}
+The previous exercise did not use the full power of neural networks, i.e.\ their ability to take in some input, e.g.\ a spin system, and spit out some output, e.g.\ energy, without any knowledge of how the output should depend on the input --- a ``black box''-behaviour. Instead, the neural network was turned into a linear regression machine because it was told to apply an affine transformation to fit data which was known to be linear.
+
+It is therefore interesting to see whether the neural network can predict energies when it is just given the spin configuration and no other knowledge. Since the energy has a non-linear dependence on the spins, this requires more than one layer.
+
 
 %                                   _ _
 %   __ _ _ __  _ __   ___ _ __   __| (_)_  __

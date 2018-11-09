@@ -38,6 +38,6 @@ endforeach(program_file)
 
 target_link_libraries(linreg ising_basis)
 target_link_libraries(logreg regression)
-foreach(prog reg_nn_test_couplings reg_nn_convergence)
+foreach(prog reg_nn_test_couplings reg_nn_convergence reg_nn_test_spins)
     target_link_libraries(${prog} neuralnetwork)
 endforeach(prog)
