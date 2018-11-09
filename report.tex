@@ -420,6 +420,11 @@ giving
              = a^L - y.
 \end{equation}
 
+\subsubsection{Implementation}
+As in the previous project, I have chosen to use an object-oriented approach and Fortran. This combination resulted in general, easy-to-use and efficient code for regression methods. The neural network is therefore similarly organised.
+
+The most important class is the \lstinline{neural_network} class. This contains methods for training, prediction and back propagation, which call corresponding methods on each element in the network's array of \lstinline{layer} objects. Each \lstinline{layer} has a weight matrix, a bias vector, some temporary output and input vectors, and an \lstinline{activation_function} object. Sublasses of \lstinline{activation_function} have been implemented for both the sigmoid function and the rectifying linear unit. These implement a method for evaluation and differentiation. Giving the last \lstinline{layer} instances of different \lstinline{activation_function} subclasses tailors the neural network to either classification or regression.
+
 
 
 %      _             _               _   _
@@ -589,7 +594,7 @@ There are many parameters to be chosen in logistic regression. I chose to vary r
 
 \begin{table}[H]
     \centering
-    \caption{Accuracy on training and test data, as well as the critical states, for a variety of regularisations \(\lambda\). Optimal momentums and learning rates are estimated through a simple parameter sweep. The number of stochastic gradient descent iterations was limited to \(100\), while the batch size was \(32\). Other prints from the program shows that the choice of hyperparameters such as learning rate is very important for logistic regression to be better than guessing.}
+    \caption{Accuracy on training and test data, as well as the critical states, for a variety of regularisations \(\lambda\). Optimal momentums and learning rates are estimated through a simple parameter sweep. The number of stochastic gradient descent iterations was limited to \(100\), while the batch size was \(32\). Other prints from the program show that the choice of hyperparameters such as learning rate is very important for logistic regression to be better than guessing.}
     \pgfplotstabletypeset[
         columns/lambda/.style={column name={$\lambda$},
             dec sep align,
@@ -638,17 +643,22 @@ If the same input is used as in~\vref{subsec:linregresults}, the weight matrix o
 
 \begin{table}[H]
     \centering
+    \caption{Optimal combination of learning rate and batch size for a few different values of \(\lambda\). The given numbers of epochs and training time are determined by registering when the neural network gives \(R^2\geq \num{0.98}\) on test data. Optimal parameters are defined as the parameters which give the shortest \emph{training time}. A batch size of \(1\) always gives the smallest number of required epochs, but does not utilise the parallelisation of the neural network. These results are generated on a \(4\)-core processor. Using more cores would lead to a larger optimal batch size. A suitable choice of regularisation parameter is seen to reduce training time and the required number of epochs, while too strong regularisation keeps the neural network from converging sufficiently.}
     \pgfplotstabletypeset[
         columns/lambda/.style={column name={$\lambda$},
             dec sep align,
             sci, sci zerofill,
             precision=1,
-            string replace={0.E+00}{}
+            string replace={0.0E+00}{}
         },
-        columns/{Learning rate}/.style={sci, sci zerofill, precision=1},
+        columns/{Learning rate}/.style={sci, sci zerofill, precision=1,string replace={0.0E+00}{}},
+        columns/{Training time [s]}/.style={sci, sci zerofill, precision=1,string replace={0.0E+00}{}},
+        columns/{Epochs for convergence}/.style={string replace={0}{}},
+        columns/{Batch size}/.style={string replace={0}{}},
         fixed, precision=0, fixed zerofill
     ]{data/reg_nn_convergence.dat}
 \end{table}
+
 
 %                                   _ _
 %   __ _ _ __  _ __   ___ _ __   __| (_)_  __
