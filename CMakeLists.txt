@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.7)
-project(2)
-enable_language(Fortran)
+project(2 Fortran)
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
@@ -10,6 +9,11 @@ find_package(OpenMP)
 if(OpenMP_Fortran_FOUND)
     set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_Fortran_FLAGS}")
 endif()
+
+if(CMAKE_Fortran_COMPILER_ID MATCHES INTEL)
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -mkl")
+endif(CMAKE_Fortran_COMPILER_ID MATCHES INTEL)
+
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
     set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wall -Wextra")
@@ -26,7 +30,8 @@ add_library(ising ${CMAKE_CURRENT_SOURCE_DIR}/lib/ising.f90)
 
 target_link_libraries(ising_basis regression)
 
-set(libs ising)
+link_directories(/usit/abel/u1/anjohan/OpenCoarrays/build/lib64)
+set(libs ising caf_mpi)
 
 file(GLOB program_files ${CMAKE_CURRENT_SOURCE_DIR}/programs/*.*90)
 

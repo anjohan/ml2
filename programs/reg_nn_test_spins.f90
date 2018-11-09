@@ -8,16 +8,20 @@ program reg_nn_spins
     class(neural_network), allocatable :: nn
 
     real(dp), allocatable :: learning_rates(:)
-    real(dp), allocatable :: spins(:,:)[:], energies(:,:), pred(:,:)
-    real(dp), allocatable :: test_spins(:,:)[:], test_energies(:,:), r2s(:,:)
+    real(dp), allocatable :: spins(:,:), energies(:,:), pred(:,:)
+    real(dp), allocatable :: test_spins(:,:), test_energies(:,:), r2s(:,:)
 
     L = 40
     num_states = 10000
     num_epochs = 100
-    allocate(spins(L, num_states)[*], energies(1, num_states), pred(1, num_states))
-    allocate(test_spins(L, num_states)[*], test_energies(1, num_states))
+    allocate(spins(L, num_states), energies(1, num_states), pred(1, num_states))
+    allocate(test_spins(L, num_states), test_energies(1, num_states))
 
-    call random_number(spins); call random_number(test_spins)
+    spins(:,:) = 0
+    test_spins(:,:) = 0
+    if (this_image() == 1) call random_number(spins); call random_number(test_spins)
+    call co_sum(spins)
+    call co_sum(test_spins)
 
     where (spins > 0.5)
         spins = 1
@@ -31,8 +35,6 @@ program reg_nn_spins
     end where
 
 
-    sync all
-    spins(:,:) = spins(:,:)[1]; test_spins(:,:) = test_spins(:,:)[1]
     do i = 1, num_states
         energies(1, i) = energy(spins(:, i))
         test_energies(1, i) = energy(test_spins(:, i))
