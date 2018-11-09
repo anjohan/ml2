@@ -1,5 +1,4 @@
 sources = $(shell find -name "*.f90")
-SHELL := /usr/bin/bash
 deps = sources2.bib data/J_Ridge_1.png data/J_ols_1.png data/J_LASSO_1000_1.png data/J_LASSO_400_1.png data/states.bin
 
 all:
