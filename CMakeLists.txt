@@ -19,12 +19,14 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
 endif(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/regression)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/neuralnetwork)
 
+add_library(ising_basis ${CMAKE_CURRENT_SOURCE_DIR}/lib/ising_basis.f90)
 add_library(ising ${CMAKE_CURRENT_SOURCE_DIR}/lib/ising.f90)
 
-target_link_libraries(ising regression)
+target_link_libraries(ising_basis regression)
 
-set(libs ising regression)
+set(libs ising)
 
 file(GLOB program_files ${CMAKE_CURRENT_SOURCE_DIR}/programs/*.*90)
 
@@ -33,3 +35,9 @@ foreach(program_file ${program_files})
     add_executable(${program} ${program_file})
     target_link_libraries(${program} "${libs}")
 endforeach(program_file)
+
+target_link_libraries(linreg ising_basis)
+target_link_libraries(logreg regression)
+foreach(prog reg_nn_test_couplings reg_nn_convergence reg_nn_test_spins)
+    target_link_libraries(${prog} neuralnetwork)
+endforeach(prog)

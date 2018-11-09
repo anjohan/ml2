@@ -2,6 +2,7 @@ program linreg
     use iso_fortran_env, only: dp => real64
     use mod_ols
     use mod_ridge
+    use mod_ising_basis
     use mod_ising
     use mod_bootstrap
     implicit none
@@ -14,10 +15,13 @@ program linreg
     real(dp), allocatable :: spins(:,:), couplings(:,:), energies(:), J(:,:), &
                              lambdas(:), test_couplings(:,:), test_energies(:), tmp(:)
     real(dp) :: mse, r2
+    character(len=1024) :: str
 
-    L = 40
-    num_states = 1000
     num_bootstraps = 20
+    L = 40
+
+    read(*,*) num_states
+    write(str,"(i0)") num_states
 
     call create_ising_basis(basis, L)
 
@@ -47,7 +51,7 @@ program linreg
     call fitter%fit(couplings, energies)
     J = reshape(fitter%beta, [L, L])
 
-    open(newunit=u, file="data/J_ols.dat", status="replace")
+    open(newunit=u, file="data/J_ols_" // trim(str) // ".dat", status="replace")
     write(u, "(i0,/)") L
     do i = 1, L
         write(u, "(*(f0.6,:,x))") J(:, i)
@@ -58,10 +62,10 @@ program linreg
     lambdas = 10.0d0**[(i, i = -4, 4)]
     num_lambdas = size(lambdas)
 
-    open(newunit=u, file="data/J_Ridge.dat", status="replace")
+    open(newunit=u, file="data/J_Ridge_" // trim(str) // ".dat", status="replace")
     write(u, *) L
 
-    open(newunit=u_bivar, file="data/mse_Ridge.dat", status="replace")
+    open(newunit=u_bivar, file="data/mse_Ridge_" // trim(str) // ".dat", status="replace")
 
     do i = 1, num_lambdas
         fitter = ridge(lambdas(i), basis)

@@ -164,7 +164,7 @@
 
 \begin{abstract}
     This project applies several statistical learning methods to data from the famous Ising model.
-    Linear regression is used to determine the coupling, while classification of spin configurations as ordered or disordered is achived with both logistic regression and multi-layered naural networks.
+    Linear regression is used to determine the coupling, while classification of spin configurations as ordered or disordered is achieved with both logistic regression and multi-layered neural networks.
     Finally, neural networks are trained to predict the energy of a spin configuration.
 
     LASSO regression is found to perfectly reproduce the Ising model and give an \(R^2\) score of \(1\) for the correct choice of regularisation.
@@ -181,14 +181,14 @@ Physicists study the model because it represents a magnetic lattice and can mode
 Social scientists like the model because it is a simple correlated system, which can approximate correlated quantities such as dialects.
 The Metropolis algorithm, acknowledged as one of the premiere algorithms in computational science, is a method for finding the properties of the Ising model numerically.
 
-This project does not deal with the simulation of a spin lattice, but rather the classification and analysis of precalculated spin configurations with corresponding energies.
+This project does not deal with the simulation of a spin lattice, but rather the classification and analysis of pre-calculated spin configurations with corresponding energies.
 Thus the Ising model can be used to verify various numerical methods for both regression and classification, and also measure their performance to infer their relative strengths and weaknesses.
 
 The main goal is to compare simple neural networks with the different linear regression methods for regression and logistic regression for classification.
 The regression part of the problem is to find the coupling constants from given spin configurations and their energies, as well as prediction of energies.
 Binary classification of states as ordered or disordered is used as a classification problem.
 
-Consequently, the first part of this report derives the necessary mathemetical tools for both regression and classification, including the back propagation algorithm for training neural networks. Different methods for classification and regression are then applied to the Ising data provided in\cite{mehta} and compared.
+Consequently, the first part of this report derives the necessary mathematical tools for both regression and classification, including the back propagation algorithm for training neural networks. Different methods for classification and regression are then applied to the Ising data provided in\cite{mehta} and compared.
 
 \section{Theory and methods}
 See~\vref{sec:linreg} for a review of linear regression, including terminology and regression problem statement.
@@ -238,7 +238,7 @@ A dataset of two-dimensional spin configurations has been made available in~\cit
 % | | |  __/ (_| | | |  __/\__ \__ \ | (_) | | | |
 % |_|  \___|\__, |_|  \___||___/___/_|\___/|_| |_|
 %           |___/
-\subsection{Binary logistic regression}
+\subsection{Binary logistic regression}\label{subsec:logreg}
 Binary logistic regression is applied to problems where there are two possible outcomes, e.g. \(y_i=1\) or \(y_i=0\). Given an input \(\vec{x}_i\) (for example a spin configuration), a logistic regressor gives as output the probability \(p_i\) that \(y_i=1\).
 The name logistic regression stems from the use of a logistic function as the value of \(p\), where the logistic function is applied to a linear combination of functions evaluated in the output, i.e.
 \begin{equation}
@@ -320,7 +320,7 @@ A neural network is a series of affine transformations and activation functions,
 
 Each pair of one affine transformation and activation function is called a \emph{layer}. The number of outputs from a layer is called the number of \emph{neurons} in the layer. Mathematically, layer number \(l\) contains a weight-matrix \(W^l\), a bias vector \(\vec{b}^l\) and an activation function \(f^l\), takes input \(\vec{a}^{l-1}\), applies the affine transformation \(\vec{z}^l = W^l \vec{a}^{l-1} + \vec{b}^l\) and returns the output \(f^l(\vec{z}^l)\).
 
-Prediction is done recursively. The first layer, called the input layer, applies its affine transformation to the input vector and then the activation function. The second layer receives the output of the first layer and repeats the process. This is repeated up to and including the final (output) layer, whose activation function is tailored to either classification or regression.
+Prediction is done recursively. The first layer, called the input layer, applies its affine transformation to the input vector and then its activation function. The second layer receives the output of the first layer and repeats the process. This is repeated up to and including the final (output) layer, whose activation function is tailored to either classification or regression.
 
 \subsubsection{Minimisation: Back-propagation}
 Similarly to logistic regression, the cost function should be minimised using some sort of gradient method.
@@ -351,7 +351,7 @@ This relation can be derived through one final application of the chain rule,
     \delta_j^l = \pdv{Q}{z_j^l} = \pdv{Q}{z_k^{l+1}}\pdv{z_k^{l+1}}{z_j^l}
                = \delta_k^{l+1} \pdv{z_k^{l+1}}{a_i^l}\pdv{a_i^l}{z_j^{l}}
                = \delta_k^{l+1} \pdv{a_i^l}\qty(W_{km}^{l+1}a_m^l + b_k^l) \pdv{f^l(z_i^l)}{z_j^{l}}
-               = \delta_k^{l+1} W_{kj} {f^l} '(z_j^l).
+               = \delta_k^{l+1} W_{kj}^{l+1} {f^l} '(z_j^l).
 \end{equation}
 
 The above results can be summarised on a matrix form as
@@ -406,7 +406,7 @@ and
 Binary classification problems such as the one of the two-dimensional Ising model may use the same cost function as that of logistic regression,with the logistic function used as the activation function of the output layer in order to obtain a probability \(a^L\) between zero and one.
 The cost function is then
 \begin{equation}
-    Q = -\qty(y\ln(a^L) - (1 - y)\ln(1-a^L))
+    Q = -\qty(y\ln(a^L) + (1 - y)\ln(1-a^L))
 \end{equation}
 with
 \begin{equation}
@@ -419,6 +419,11 @@ giving
              = \frac{a^L - y}{a^L\qty(1-a^L)} \cdot f^L(z^L)\qty(1-f^L(z^L))
              = a^L - y.
 \end{equation}
+
+\subsubsection{Implementation}
+As in the previous project, I have chosen to use an object-oriented approach and Fortran. This combination resulted in general, easy-to-use and efficient code for regression methods. The neural network is therefore similarly organised.
+
+The most important class is the \lstinline{neural_network} class. This contains methods for training, prediction and back propagation, which call corresponding methods on each element in the network's array of \lstinline{layer} objects. Each \lstinline{layer} has a weight matrix, a bias vector, some temporary output and input vectors, and an \lstinline{activation_function} object. Sublasses of \lstinline{activation_function} have been implemented for both the sigmoid function and the rectifying linear unit. These implement a method for evaluation and differentiation. Giving the last \lstinline{layer} instances of different \lstinline{activation_function} subclasses tailors the neural network to either classification or regression.
 
 
 
@@ -452,22 +457,40 @@ A further improvement is to add a so-called momentum, i.e.\ use a linear combina
 % | '__/ _ \/ __| | | | | __/ __|
 % | | |  __/\__ \ |_| | | |_\__ \
 % |_|  \___||___/\__,_|_|\__|___/
-\section{Results}
-\subsection{Linear regression}
+\section{Results and discussion}
+\subsection{Linear regression}\label{subsec:linregresults}
+One-dimensional binary lattices were generated randomly, and their energies were calculated.
+The regression methods were told to approximate the energies as linear combinations of spin-spin products, \(E=-J_{ij}s_i s_j\).
+An interesting feature of this regression problem is the non-uniqueness of the coupling matrix.
+While the energy is generated from \(E=-\sum_j J_{j,j+1}s_j s_{j+1}\), any matrix \(J\) which fulfils \(J_{j,j+1} + J_{j,j-1}=1\) and \(J_{ij} = -J_{ji}\) for \(i\neq j\pm1\) (requiring \(J_{ii}=0\)) will give the same energy.
+
+Widely different behaviours are seen for the three regression algorithms.
+Ordinary least squares gives strange results, while Ridge and LASSO regression give good, but different, results.
+Ridge regression, whose cost function includes the sum of the squares of the coefficients \(\beta_j\), gives a symmetric coupling matrix because \(\num{0.5}^2+\num{0.5}^2\) is the smallest squared sum of two numbers which add up to one.
+The resulting performance is an \(R^2\) score around \(\num{0.8}\) when \(\lambda\) is not chosen too large.
+
+On the other hand, LASSO regression is able to perfectly reproduce the asymmetric coupling matrix used to generate the data with the correct choice of regularisation parameter, resulting in an \(R^2\) score of \(1\). Using more training samples reduces the sensitivity to \(\lambda\), while the peak performance is the same for \(\num{400}\) and \(\num{1000}\) samples.
+
+When the number of samples reaches the number of parameters, \(L^2=\num{1600}\), Ridge regression gives perfect energies because the underlying model of the energy is the same as the model used for fitting. Reducing the number of samples reduces the accuracy. LASSO regression, on the other hand, manages to find a perfect fit for certain values of \(\lambda\) even with \(\num{400}\) samples.
+
+Coupling matrices showing transitions and other interesting features are shown below. A complete set is given in~\vref{fig:morecouplings} and beyond.
+
 \begin{figure}[H]
     \centering
     \begin{tikzpicture}
         \begin{axis}[
             thick,
             width=6in, height=3in,
-            legend style={draw=none, fill=none, at={(0.02,0.02)}, anchor=south west},
+            legend style={draw=none, fill=none, at={(0.15,0.1)}, anchor=south west},
             legend cell align=left,
             xmode=log,
             xlabel={\(\lambda\)},
             ylabel={\(R^2\) score},
         ]
-            \addplot+ table[y index=1] {data/mse_Ridge.dat};
-            \addlegendentry{Ridge};
+            \addplot+ table[y index=1] {data/mse_Ridge_1000.dat};
+            \addlegendentry{Ridge, \(\num{1000}\) states};
+            \addplot+ table[y index=1] {data/mse_Ridge_1600.dat};
+            \addlegendentry{Ridge, \(\num{1600}\) states};
             \addplot+ table[y index=1] {data/mse_LASSO_400.dat};
             \addlegendentry{LASSO, \(\num{400}\) states};
             \addplot+ table[y index=1] {data/mse_LASSO_1000.dat};
@@ -482,19 +505,25 @@ A further improvement is to add a so-called momentum, i.e.\ use a linear combina
     \begin{tikzpicture}
         \begin{axis}[
             thick,
-            width=6in, height=3in,
+            width=4in, height=3in,
             xmode=log, ymode=log,
-            legend style={draw=none, fill=none, at={(0.98,0.02)}, anchor=south east},
+            legend style={draw=none, fill=none, at={(1.0,0.02)}, anchor=south west},
             legend cell align=left,
             xlabel={\(\lambda\)},
             ylabel={Error},
         ]
-            \addplot+ table[y index=2] {data/mse_Ridge.dat};
-            \addlegendentry{MSE (Ridge)};
-            \addplot+ table[y index=3] {data/mse_Ridge.dat};
-            \addlegendentry{Bias (Ridge)};
-            \addplot+ table[y index=4] {data/mse_Ridge.dat};
-            \addlegendentry{Variance (Ridge)};
+            \addplot+ table[y index=2] {data/mse_Ridge_1000.dat};
+            \addlegendentry{MSE (Ridge, \(\num{1000}\) states)};
+            \addplot+ table[y index=3] {data/mse_Ridge_1000.dat};
+            \addlegendentry{Bias (Ridge, \(\num{1000}\) states)};
+            \addplot+ table[y index=4] {data/mse_Ridge_1000.dat};
+            \addlegendentry{Variance (Ridge, \(\num{1000}\) states)};
+            \addplot+ table[y index=2] {data/mse_Ridge_1600.dat};
+            \addlegendentry{MSE (Ridge, \(\num{1600}\) states)};
+            \addplot+ table[y index=3] {data/mse_Ridge_1600.dat};
+            \addlegendentry{Bias (Ridge, \(\num{1600}\) states)};
+            \addplot+ table[y index=4] {data/mse_Ridge_1600.dat};
+            \addlegendentry{Variance (Ridge, \(\num{1600}\) states)};
             \addplot+ table[y index=2] {data/mse_LASSO_400.dat};
             \addlegendentry{MSE (LASSO, \(\num{400}\) states)};
             \addplot+ table[y index=3] {data/mse_LASSO_400.dat};
@@ -509,51 +538,157 @@ A further improvement is to add a so-called momentum, i.e.\ use a linear combina
             \addlegendentry{Variance (LASSO, \(\num{1000}\) states)};
         \end{axis}
     \end{tikzpicture}
-    \caption{Bias-variance decomposition of the mean squared error for Ridge and LASSO regression. The bias and variance are expected to add up to the mean squared error, which is confirmed by the plot. Further, using a regularisation parameter \(\lambda\) which is too large causes the mean squared error to increase because the approximating model becomes unable to fit the data, i.e.\ the bias increases, and the reduction of variance can not compensate sufficiently. As seen also in~\vref{fig:r2}, LASSO outperforms Ridge regression for certain values of \(\lambda\).}
+    \caption{Bias-variance decomposition of the mean squared error for Ridge and LASSO regression. The bias and variance are expected to add up to the mean squared error, which is confirmed by the plot. Further, using a regularisation parameter \(\lambda\) which is too large causes the mean squared error to increase because the approximating model becomes unable to fit the data, i.e.\ the bias increases, and the reduction of variance can not compensate sufficiently. As seen also in~\vref{fig:r2}, LASSO outperforms Ridge regression for certain values of \(\lambda\) when fewer samples than \(L^2\) is used.}\label{fig:mse}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.5\textwidth]{data/J_ols_1.png}
-    \caption{Coupling matrix for ordinary least squares regression. White is zero, black is one. It is clear that the lack of regularisation causes overfitting when few states are used as input. Additionally, ordinary least squares and Ridge regression find a symmetric coupling matrix. The strange lower right quarter of the coupling matrix can be caused by either something wrong which I have done, or the use of \lstinline{dgelsd}, which finds a singular value decomposition via the divide-and-conquer algorithm.}
+    \begin{subfigure}[t]{0.45\textwidth}\centering
+        \includegraphics[width=0.8\textwidth]{data/J_ols_1000_1.png}
+        \caption{\(\num{1000}\) states.}
+    \end{subfigure}
+    \begin{subfigure}[t]{0.45\textwidth}\centering
+        \includegraphics[width=0.8\textwidth]{data/J_ols_1600_1.png}
+        \caption{\(\num{1600}\) states.}
+    \end{subfigure}
+    \caption{Coupling matrix for ordinary least squares regression. White is negative one, black is one. It is clear that the lack of regularisation causes overfitting when few states are used as input. Additionally, ordinary least squares and Ridge regression find a coupling matrix whose super and sub diagonals are equal. The strange lower right quarter of the coupling matrix can be caused by either something wrong which I have done, or the use of \lstinline{dgelsd}, which finds a singular value decomposition via the divide-and-conquer algorithm. Notice that most of the noise (that is, non-zero elements other than on the sub and super diagonals) is antisymmetric, so that these elements cancel and do not affect the energy.}
 \end{figure}
 
 \begin{luacode*}
 i = 1
 for line in io.lines("data/Ridge_lambdas.dat") do
-    -- if i < 6 then goto next end
-    s = ""
-        .. [[\begin{figure}[H] ]]
-        .. [[\centering]]
-        .. [[\begin{subfigure}[t]{0.3\textwidth} \centering]]
-            .. [[\includegraphics[height=0.20\textheight]{data/J_Ridge_]] .. tostring(i) .. [[.png}]]
-            .. [[\caption{Ridge regression, \(\num{1000}\) training states.}]]
-        .. [[\end{subfigure}\hspace{0.04\textwidth}]]
-        .. [[\begin{subfigure}[t]{0.3\textwidth} \centering]]
-            .. [[\includegraphics[height=0.20\textheight]{data/J_LASSO_400_]] .. tostring(i) .. [[.png}]]
-            .. [[\caption{LASSO regression, \(\num{400}\) training states.}]]
-        .. [[\end{subfigure}\hspace{0.04\textwidth}]]
-        .. [[\begin{subfigure}[t]{0.3\textwidth} \centering]]
-            .. [[\includegraphics[height=0.20\textheight]{data/J_LASSO_1000_]] .. tostring(i) .. [[.png}]]
-            .. [[\caption{LASSO regression, \(\num{1000}\) training states.}]]
-        .. [[\end{subfigure}]]
-        .. [[\caption{Coupling matrices for \(\lambda = \num{]] .. line ..[[}\).}]]
-    if i == 1 then s = s .. [[ \label{fig:coupling} ]] end
-    s = s .. [[\end{figure}]]
-    tex.sprint(s)
+    if i<3 or i==5 or i>7 then
+        s = ""
+            .. [[\begin{figure}[H] ]]
+            .. [[\centering]]
+            .. [[\begin{subfigure}[t]{0.2\textwidth} \centering]]
+                .. [[\includegraphics[height=0.8\textwidth]{data/J_Ridge_1000_]] .. tostring(i) .. [[.png}]]
+                .. [[\caption{Ridge regression, \(\num{1000}\) training states.}]]
+            .. [[\end{subfigure}\hspace{0.04\textwidth}]]
+            .. [[\begin{subfigure}[t]{0.2\textwidth} \centering]]
+                .. [[\includegraphics[height=0.8\textwidth]{data/J_Ridge_1600_]] .. tostring(i) .. [[.png}]]
+                .. [[\caption{Ridge regression, \(\num{1600}\) training states.}]]
+            .. [[\end{subfigure}\hspace{0.04\textwidth}]]
+            .. [[\begin{subfigure}[t]{0.2\textwidth} \centering]]
+                .. [[\includegraphics[height=0.8\textwidth]{data/J_LASSO_400_]] .. tostring(i) .. [[.png}]]
+                .. [[\caption{LASSO regression, \(\num{400}\) training states.}]]
+            .. [[\end{subfigure}\hspace{0.04\textwidth}]]
+            .. [[\begin{subfigure}[t]{0.2\textwidth} \centering]]
+                .. [[\includegraphics[height=0.8\textwidth]{data/J_LASSO_1000_]] .. tostring(i) .. [[.png}]]
+                .. [[\caption{LASSO regression, \(\num{1000}\) training states.}]]
+            .. [[\end{subfigure}]]
+            .. [[\caption{Coupling matrices for \(\lambda = \num{]] .. line ..[[}\).}]]
+        if i == 1 then s = s .. [[ \label{fig:coupling} ]] end
+        s = s .. [[\end{figure}]]
+        tex.sprint(s)
+    end
     ::next::
     i = i + 1
 end
 \end{luacode*}
 
 \subsection{Logistic regression}
+Mehta et.\ al.\cite{mehta} have provided a data set with \(\num{160000}\) spin configurations on a \(40\times40\) lattice. The states are labelled as ordered or disordered. Of these, \(\num{30000}\) are considered \emph{critical}, i.e.\ in the range between ordered and disordered (this phase transition is sharp only in the limit of infinite lattice size). The non-critical states were divided into training and test data, while the critical states were kept as an extra test set.
+
+There are many parameters to be chosen in logistic regression. I chose to vary regularisation, learning rate and momentum to determine the optimal combination of parameters. The batch size could also have been varied, but this was kept fixed for simplicity and reduction of runtime. Additionally, the batch size only determines the rate of convergence, while wrong choices for the other parameters often lead to no convergence at all. For each \(\lambda\), an optimal learning rate and momentum was determined through a (parallel) parameter sweep.
+
 \begin{table}[H]
     \centering
-    \caption{Accuracy on training and test data, as well as the critical states, for a variety of regularisations \(\lambda\). Optimal momentums and learning rates are estimated through a simple parameter sweep. The number of stochastic gradient descent iterations was limited to \(100\), while the batch size was \(32\).}
-    \pgfplotstabletypeset[columns/lambda/.style={column name={$\lambda$},dec sep align},columns/Momentum/.style={fixed},sci, sci zerofill,precision=1]{data/logreg_table.dat}
+    \caption{Accuracy on training and test data, as well as the critical states, for a variety of regularisations \(\lambda\). Optimal momentums and learning rates are estimated through a simple parameter sweep. The number of stochastic gradient descent iterations was limited to \(100\), while the batch size was \(32\). Other prints from the program show that the choice of hyperparameters such as learning rate is very important for logistic regression to be better than guessing.}
+    \pgfplotstabletypeset[
+        columns/lambda/.style={column name={$\lambda$},
+            dec sep align,
+            sci, sci zerofill,
+            precision=1,
+            string replace={0.E+00}{}
+        },
+        columns/{Learning rate}/.style={sci, sci zerofill, precision=1},
+        fixed, precision=2, fixed zerofill
+    ]{data/logreg_table.dat}
 \end{table}
 
+\subsection{Neural network regression}
+\subsubsection{Rediscovering the Ising model}
+A neural network with only an output layer and no activation function is identical to a linear regressor, except for the use of a minimisation algorithm instead of closed form solutions.
+If the same input is used as in~\vref{subsec:linregresults}, the weight matrix of such a neural network should be equal to the coupling matrix of the Ising model.
 
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}
+        \begin{axis}[
+            thick,
+            width=6in, height=3in,
+            legend style={draw=none, fill=none, at={(0.98,0.02)}, anchor=south east},
+            legend cell align=left,
+            xmode=log,
+            xlabel={epochs},
+            ylabel={\(R^2\) score},
+        ]
+            \addplot+ table[y index=1] {data/reg_nn_test_couplings.dat};
+            \addlegendentry{\(\alpha=\num{0.001}\)};
+            \addplot+ table[y index=2] {data/reg_nn_test_couplings.dat};
+            \addlegendentry{\(\alpha=\num{0.01}\)};
+            \addplot+ table[y index=3] {data/reg_nn_test_couplings.dat};
+            \addlegendentry{\(\alpha=\num{0.04}\)};
+        \end{axis}
+    \end{tikzpicture}
+    \caption{\(R^2\) score on training data as a function of the number of epochs, i.e.\ the number of stochastic gradient descent iterations. \(\num{3000}\) states were used for training with a batch size of \(300\). With the right learning rate, the neural network converges quickly to the correct solution, while a badly chosen learning rate leads to slower convergence or even divergence. A learning rate of \(\num{0.05}\) ruins everything (not shown).}\label{fig:r2nn}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.3\textwidth]{data/J_nn_1.png}
+    \caption{Weight matrix of the neural network's only layer, which should be equal to the coupling matrix \(J\). The neural network gives a symmetric matrix with weights \(\num{0.5}\) on the super and sub diagonals.}
+\end{figure}
+
+\begin{table}[H]
+    \centering
+    \caption{Optimal combination of learning rate and batch size for a few different values of \(\lambda\). The given numbers of epochs and training time are determined by registering when the neural network gives \(R^2\geq \num{0.98}\) on test data. Optimal parameters are defined as the parameters which give the shortest \emph{training time}. A batch size of \(1\) always gives the smallest number of required epochs, but does not utilise the parallelisation of the neural network. These results are generated on a \(4\)-core processor. Using more cores would lead to a larger optimal batch size. A suitable choice of regularisation parameter is seen to reduce training time and the required number of epochs, while too strong regularisation keeps the neural network from converging sufficiently.}
+    \pgfplotstabletypeset[
+        columns/lambda/.style={column name={$\lambda$},
+            dec sep align,
+            sci, sci zerofill,
+            precision=1,
+            string replace={0.0E+00}{}
+        },
+        columns/{Learning rate}/.style={sci, sci zerofill, precision=1,string replace={0.0E+00}{}},
+        columns/{Training time [s]}/.style={sci, sci zerofill, precision=1,string replace={0.0E+00}{}},
+        columns/{Epochs for convergence}/.style={string replace={0}{}},
+        columns/{Batch size}/.style={string replace={0}{}},
+        fixed, precision=0, fixed zerofill
+    ]{data/reg_nn_convergence.dat}
+\end{table}
+
+\subsubsection{Energy from a black body}
+The previous exercise did not use the full power of neural networks, i.e.\ their ability to take in some input, e.g.\ a spin system, and spit out some output, e.g.\ energy, without any knowledge of how the output should depend on the input --- a ``black box''-behaviour. Instead, the neural network was turned into a linear regression machine because it was told to apply an affine transformation to fit data which was known to be linear.
+
+It is therefore interesting to see whether the neural network can predict energies when it is just given the spin configuration and no other knowledge. Since the energy has a non-linear dependence on the spins, this requires more than one layer. As seen in~\vref{fig:r2nnspin}, a modest neural network (with three hidden layers of \(50\) neurons each) achieves an \(R^2\) score above \(\num{0.9}\).
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}
+        \begin{axis}[
+            thick,
+            width=6in, height=3in,
+            legend style={draw=none, fill=none, at={(0.02,0.98)}, anchor=north west},
+            legend cell align=left,
+            xmode=log,
+            xlabel={epochs},
+            ylabel={\(R^2\) score},
+        ]
+            \addplot+ table[y index=1] {data/reg_nn_test_spins.dat};
+            \addlegendentry{\(\alpha=\num{0.001}\)};
+            \addplot+ table[y index=2] {data/reg_nn_test_spins.dat};
+            \addlegendentry{\(\alpha=\num{0.01}\)};
+            \addplot+ table[y index=3] {data/reg_nn_test_spins.dat};
+            \addlegendentry{\(\alpha=\num{0.04}\)};
+        \end{axis}
+    \end{tikzpicture}
+    \caption{\(R^2\) score on training data as a function of the number of epochs, i.e.\ the number of stochastic gradient descent iterations. \(\num{10000}\) states were used for training with a batch size of \(32\), \(\lambda=\num{0.001}\) and \(L=40\). The neural network consists of three hidden layers with \(50\) neurons each. While a learning rate of \(\num{0.04}\) initially converges the fastest, a smaller learning rate results in a better final \(R^2\) score. An adaptive scheme may therefore perform better.}\label{fig:r2nnspin}
+\end{figure}
+
+\subsection{Neural network classification}
+The logistic regression in~\vref{subsec:logreg} showed mediocre performance, never achieving an accuracy above approximately \(\SI{70}{\percent}\). A neural network, with its series of affine transformations and activation functions, has a much more complex approximating function, more degrees of freedom and therefore a better chance of reaching a near-perfect predicting performance.
 
 %                                   _ _
 %   __ _ _ __  _ __   ___ _ __   __| (_)_  __
@@ -568,6 +703,38 @@ end
 \renewcommand{\thesection}{\Alph{section}}
 \labelformat{section}{appendix~#1}
 \labelformat{subsection}{appendix~#1}
+
+\section{More coupling matrices}
+\begin{luacode*}
+i = 1
+for line in io.lines("data/Ridge_lambdas.dat") do
+    s = ""
+        .. [[\begin{figure}[H] ]]
+        .. [[\centering]]
+        .. [[\begin{subfigure}[t]{0.2\textwidth} \centering]]
+            .. [[\includegraphics[height=0.8\textwidth]{data/J_Ridge_1000_]] .. tostring(i) .. [[.png}]]
+            .. [[\caption{Ridge regression, \(\num{1000}\) training states.}]]
+        .. [[\end{subfigure}\hspace{0.04\textwidth}]]
+        .. [[\begin{subfigure}[t]{0.2\textwidth} \centering]]
+            .. [[\includegraphics[height=0.8\textwidth]{data/J_Ridge_1600_]] .. tostring(i) .. [[.png}]]
+            .. [[\caption{Ridge regression, \(\num{1600}\) training states.}]]
+        .. [[\end{subfigure}\hspace{0.04\textwidth}]]
+        .. [[\begin{subfigure}[t]{0.2\textwidth} \centering]]
+            .. [[\includegraphics[height=0.8\textwidth]{data/J_LASSO_400_]] .. tostring(i) .. [[.png}]]
+            .. [[\caption{LASSO regression, \(\num{400}\) training states.}]]
+        .. [[\end{subfigure}\hspace{0.04\textwidth}]]
+        .. [[\begin{subfigure}[t]{0.2\textwidth} \centering]]
+            .. [[\includegraphics[height=0.8\textwidth]{data/J_LASSO_1000_]] .. tostring(i) .. [[.png}]]
+            .. [[\caption{LASSO regression, \(\num{1000}\) training states.}]]
+        .. [[\end{subfigure}]]
+        .. [[\caption{Coupling matrices for \(\lambda = \num{]] .. line ..[[}\).}]]
+    if i == 1 then s = s .. [[ \label{fig:morecouplings} ]] end
+    s = s .. [[\end{figure}]]
+    tex.sprint(s)
+    ::next::
+    i = i + 1
+end
+\end{luacode*}
 
 \section{Review of linear regression}\label{sec:linreg}
 This section is mainly a copy-paste from project 1 and is included for reference.
@@ -889,6 +1056,7 @@ A more computationally practical expression could have been derived by adding an
     = \norm{\vec{y}- E_D\qty[\vec{\tilde{y}}_D]}_2^2 + E_D\qty[\norm{E_D\qty[\vec{\tilde{y}}_D] - \vec{\tilde{y}}_D}_2^2]
 \end{equation}
 by manipulations analogous to the ones used above. This is another formulation of the bias-variance decomposition which can be used without any information about the underlying model. Dividing by \(N\) gives the average \(\MSE\) on the left-hand side.
+
 
 
 \clearpage
