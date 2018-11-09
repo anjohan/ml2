@@ -1,6 +1,8 @@
 sources = $(shell find -name "*.f90")
 SHELL := /usr/bin/bash
-deps = sources2.bib data/J_ols_1000_1.png data/J_ols_1600_1.png data/J_Ridge_1000_1.png data/J_Ridge_1600_1.png data/J_LASSO_1000_1.png data/J_LASSO_400_1.png data/states.bin data/reg_nn_test_couplings.dat data/J_nn_1.png data/reg_nn_convergence.dat
+deps = sources2.bib data/J_ols_1000_1.png data/J_ols_1600_1.png data/J_Ridge_1000_1.png data/J_Ridge_1600_1.png data/J_LASSO_1000_1.png data/J_LASSO_400_1.png data/states.bin data/reg_nn_test_couplings.dat data/J_nn_1.png
+
+.PRECIOUS: *.dat
 
 all:
 	mkdir -p data
@@ -30,6 +32,7 @@ data/J_LASSO_%.dat: programs/lasso.py
 	python $< $*
 
 build/%: build programs/%.f90
+	cd build && make $*
 
 debug: $(shell find . -name "*.f90")
 	mkdir -p debug && cd debug && FC=caf cmake .. -DCMAKE_BUILD_TYPE=Debug && make
@@ -46,7 +49,7 @@ data/states.bin: programs/pkl2bin.py data/labels.pkl data/states.pkl
 data/logreg_table.dat: build/logreg programs/logreg.f90 build
 	mpirun ./$<
 
-data/reg_nn_convergence.dat: build/reg_nn_convergence programs/reg_nn_convergence.f90 build
+data/reg_nn_convergence.dat: build/reg_nn_convergence
 	mpirun ./$<
 
 data/%.dat: build/% programs/%.f90 build
@@ -54,7 +57,7 @@ data/%.dat: build/% programs/%.f90 build
 
 data/J_nn.dat: data/reg_nn_test_couplings.dat
 
-data/reg_nn_test_couplings.dat: build/reg_nn_test_couplings programs/reg_nn_test_couplings.f90 build
+data/reg_nn_test_couplings.dat: build/reg_nn_test_couplings
 	mpirun ./$<
 
 clean:

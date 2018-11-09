@@ -1,0 +1,4 @@
+ lambda {Learning rate} {Batch size} {Epochs for convergence}
+   0.0E+00   5.0E-04 1 3
+   1.0E-05   5.0E-04 1 3
+   1.0E-02   5.0E-04 1 3

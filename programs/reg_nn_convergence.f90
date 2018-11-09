@@ -12,7 +12,7 @@ program convergence
     integer :: max_epochs = 100
     real(dp) :: tolerance = 0.95d0
     real(dp) :: best_learning_rate, r2
-    integer :: fastest_convergence, best_batch_size, best_time
+    integer :: fastest_convergence, best_batch_size
     integer :: num_batch_sizes, num_lambdas, num_learning_rates
 
     real(dp), allocatable :: lambdas(:), learning_rates(:)
@@ -44,11 +44,11 @@ program convergence
         test_energies = energies(:,num_states+1:)
         energies = energies(:,:num_states)
 
-        lambdas = [0.0d0, (10.0d0**i, i = -3, -3)]
+        lambdas = [0.0d0, (10.0d0**i, i = -5, -1,3)]
         num_lambdas = size(lambdas)
-        batch_sizes = [40,80] ! [1,10,40,100,200,500,1000]
+        batch_sizes = [1,10,40,100] !,200,500,1000]
         num_batch_sizes = size(batch_sizes)
-        learning_rates = [(10.0d0**i, 5*10.0d0**i, i = -4, -2)]
+        learning_rates = [(10.0d0**i, 5*10.0d0**i, i = -5, -1, 2)]
         num_learning_rates = size(learning_rates)
     end block setup
 
@@ -66,6 +66,7 @@ program convergence
         best_learning_rate = learning_rates(1)
         do j = 1, num_batch_sizes
             params: do k = 1, num_learning_rates
+                !if (this_image() == 1) write(*,*) fastest_convergence
                 call nn%reset_weights()
                 do t = 1,max_epochs
                     call nn%train(couplings, energies, learning_rates(k), &
@@ -81,7 +82,7 @@ program convergence
                         if (t < fastest_convergence) then
                             best_batch_size = batch_sizes(j)
                             best_learning_rate = learning_rates(k)
-                            best_time = t
+                            fastest_convergence = t
                             if (this_image() == 1) write(*,*) t, i, batch_sizes(j), learning_rates(k), r2
                         end if
                         cycle params
@@ -89,7 +90,8 @@ program convergence
                 end do
             end do params
         end do
-        if (this_image() == 1) write(u, *) lambdas(i), best_learning_rate, best_batch_size, best_time
+        if (this_image() == 1) write(u, "(es10.1,es10.1,x,i0,x,i0)") lambdas(i), &
+                            best_learning_rate, best_batch_size, fastest_convergence
     end do
     if (this_image() == 1) close(u)
 end program
