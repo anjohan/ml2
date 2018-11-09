@@ -238,7 +238,7 @@ A dataset of two-dimensional spin configurations has been made available in~\cit
 % | | |  __/ (_| | | |  __/\__ \__ \ | (_) | | | |
 % |_|  \___|\__, |_|  \___||___/___/_|\___/|_| |_|
 %           |___/
-\subsection{Binary logistic regression}
+\subsection{Binary logistic regression}\label{subsec:logreg}
 Binary logistic regression is applied to problems where there are two possible outcomes, e.g. \(y_i=1\) or \(y_i=0\). Given an input \(\vec{x}_i\) (for example a spin configuration), a logistic regressor gives as output the probability \(p_i\) that \(y_i=1\).
 The name logistic regression stems from the use of a logistic function as the value of \(p\), where the logistic function is applied to a linear combination of functions evaluated in the output, i.e.
 \begin{equation}
@@ -662,8 +662,33 @@ If the same input is used as in~\vref{subsec:linregresults}, the weight matrix o
 \subsubsection{Energy from a black body}
 The previous exercise did not use the full power of neural networks, i.e.\ their ability to take in some input, e.g.\ a spin system, and spit out some output, e.g.\ energy, without any knowledge of how the output should depend on the input --- a ``black box''-behaviour. Instead, the neural network was turned into a linear regression machine because it was told to apply an affine transformation to fit data which was known to be linear.
 
-It is therefore interesting to see whether the neural network can predict energies when it is just given the spin configuration and no other knowledge. Since the energy has a non-linear dependence on the spins, this requires more than one layer.
+It is therefore interesting to see whether the neural network can predict energies when it is just given the spin configuration and no other knowledge. Since the energy has a non-linear dependence on the spins, this requires more than one layer. As seen in~\vref{fig:r2nnspin}, a modest neural network (with three hidden layers of \(50\) neurons each) achieves an \(R^2\) score above \(\num{0.9}\).
 
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}
+        \begin{axis}[
+            thick,
+            width=6in, height=3in,
+            legend style={draw=none, fill=none, at={(0.02,0.98)}, anchor=north west},
+            legend cell align=left,
+            xmode=log,
+            xlabel={epochs},
+            ylabel={\(R^2\) score},
+        ]
+            \addplot+ table[y index=1] {data/reg_nn_test_spins.dat};
+            \addlegendentry{\(\alpha=\num{0.001}\)};
+            \addplot+ table[y index=2] {data/reg_nn_test_spins.dat};
+            \addlegendentry{\(\alpha=\num{0.01}\)};
+            \addplot+ table[y index=3] {data/reg_nn_test_spins.dat};
+            \addlegendentry{\(\alpha=\num{0.04}\)};
+        \end{axis}
+    \end{tikzpicture}
+    \caption{\(R^2\) score on training data as a function of the number of epochs, i.e.\ the number of stochastic gradient descent iterations. \(\num{10000}\) states were used for training with a batch size of \(32\), \(\lambda=\num{0.001}\) and \(L=40\). The neural network consists of three hidden layers with \(50\) neurons each. While a learning rate of \(\num{0.04}\) initially converges the fastest, a smaller learning rate results in a better final \(R^2\) score. An adaptive scheme may therefore perform better.}\label{fig:r2nnspin}
+\end{figure}
+
+\subsection{Neural network classification}
+The logistic regression in~\vref{subsec:logreg} showed mediocre performance, never achieving an accuracy above approximately \(\SI{70}{\percent}\). A neural network, with its series of affine transformations and activation functions, has a much more complex approximating function, more degrees of freedom and therefore a better chance of reaching a near-perfect predicting performance.
 
 %                                   _ _
 %   __ _ _ __  _ __   ___ _ __   __| (_)_  __

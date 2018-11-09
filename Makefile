@@ -1,6 +1,6 @@
 sources = $(shell find -name "*.f90")
 SHELL := /usr/bin/bash
-deps = sources2.bib data/J_ols_1000_1.png data/J_ols_1600_1.png data/J_Ridge_1000_1.png data/J_Ridge_1600_1.png data/J_LASSO_1000_1.png data/J_LASSO_400_1.png data/states.bin data/reg_nn_test_couplings.dat data/J_nn_1.png data/reg_nn_test_spins
+deps = sources2.bib data/J_ols_1000_1.png data/J_ols_1600_1.png data/J_Ridge_1000_1.png data/J_Ridge_1600_1.png data/J_LASSO_1000_1.png data/J_LASSO_400_1.png data/states.bin data/reg_nn_test_couplings.dat data/J_nn_1.png data/reg_nn_test_spins.dat
 
 .PRECIOUS: *.dat
 
@@ -57,7 +57,7 @@ data/%.dat: build/% programs/%.f90 build
 
 data/J_nn.dat: data/reg_nn_test_couplings.dat
 
-data/reg_nn_test_couplings.dat: build/reg_nn_test_couplings
+data/reg_nn_test_%.dat: build/reg_nn_test_%
 	mpirun ./$<
 
 clean:

@@ -12,7 +12,7 @@ program reg_nn_spins
     real(dp), allocatable :: test_spins(:,:)[:], test_energies(:,:), r2s(:,:)
 
     L = 40
-    num_states = 3000
+    num_states = 10000
     num_epochs = 100
     allocate(spins(L, num_states)[*], energies(1, num_states), pred(1, num_states))
     allocate(test_spins(L, num_states)[*], test_energies(1, num_states))
@@ -38,13 +38,14 @@ program reg_nn_spins
         test_energies(1, i) = energy(test_spins(:, i))
     end do
 
-    learning_rates = [0.001d0, 0.01d0]
+    learning_rates = [0.001d0, 0.01d0, 0.04d0]
     allocate(r2s(num_epochs, size(learning_rates)))
 
-    nn = neural_network(L, [100,100,100,1], relu(), lambda=0.001d0)
+    nn = neural_network(L, [50,50,50,1], relu(), lambda=0.001d0)
     do i = 1, size(learning_rates)
         call nn%reset_weights()
         do j = 1, num_epochs
+            write(*,*) i, j
             call nn%train(spins, energies, learning_rates(i), 1, 32)
             do k = 1, num_states
                 call nn%predict(test_spins(:, k), pred(:, k))
