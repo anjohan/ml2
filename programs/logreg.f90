@@ -5,10 +5,8 @@ program logreg
     use iso_fortran_env, only: dp => real64
     implicit none
 
-    integer, allocatable :: X_crit_tmp(:,:), X_noncrit(:,:)
-    integer, allocatable :: y_crit(:), y_noncrit(:)
     real(dp), allocatable :: X_train(:,:), X_test(:,:), X_crit(:,:)
-    integer, allocatable :: y_test(:), y_train(:), y_pred(:)
+    integer, allocatable :: y_test(:), y_train(:), y_pred(:), y_crit(:)
     integer :: num_spins, num_crit, num_noncrit
     integer :: u, p
     real(dp) :: test_fraction
@@ -19,37 +17,9 @@ program logreg
     write(*,*) "Using", num_images(), " images"
 
     call read_2d_states("data/states.bin", "data/labels.bin", &
-                        X_noncrit, X_crit_tmp, y_noncrit, y_crit, .true.)
+                        X_train, X_test, X_crit, y_train, y_test, y_crit, &
+                        test_fraction, add_intercept=.true., T=.true.)
 
-    num_noncrit = size(X_noncrit,1)
-    num_crit = size(X_crit_tmp,1)
-    num_spins = size(X_crit_tmp, 2)
-    p = num_spins + 1
-
-    allocate(X_crit(num_crit,p))
-    X_crit(:,1) = 1
-    X_crit(:,2:) = X_crit_tmp(:,:)
-    deallocate(X_crit_tmp)
-    write(*,*) shape(X_noncrit), shape(y_noncrit)
-    write(*,*) shape(X_crit), shape(y_crit)
-
-    write(*,"(*(i0,:,x))") y_noncrit(1:10)
-    write(*,"(*(i0,:,x))") y_crit(1:10)
-    write(*,"(*(i0,:,x))") X_noncrit(1,2:11)
-    write(*,*) count(X_noncrit(1:10,:)==-1,dim=2)
-    call shuffle(X_noncrit, y_noncrit)
-
-    N_test = nint(test_fraction*num_noncrit)
-    allocate(X_test(N_test, p), X_train(num_noncrit-N_test,p))
-
-    X_test(:,1) = 1
-    x_train(:,1) = 1
-
-    X_test(:,2:) = X_noncrit(1:N_test,:)
-    X_train(:,2:) = X_noncrit(N_test+1:,:)
-    deallocate(X_noncrit)
-    y_test = y_noncrit(1:N_test)
-    y_train = y_noncrit(N_test+1:)
 
     simulations: block
         class(binary_logreg), allocatable :: fitter

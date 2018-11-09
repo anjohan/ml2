@@ -23,7 +23,7 @@ with open("data/states.bin", "wb") as f:
     np.array([num_spins, num_ordered, num_critical, num_disordered]).astype(
         "int32"
     ).tofile(f)
-    data[::skip].tofile(f)
+    data[::skip].astype(np.float64).tofile(f)
     # f.write("%d %d %d %d\n" % (num_spins, num_ordered, num_critical, num_disordered))
     # np.savetxt(f, data, fmt="%d")
 

@@ -36,6 +36,7 @@ foreach(program_file ${program_files})
     target_link_libraries(${program} "${libs}")
 endforeach(program_file)
 
+target_link_libraries(ising regression)
 target_link_libraries(linreg ising_basis)
 target_link_libraries(logreg regression)
 foreach(prog reg_nn_test_couplings reg_nn_convergence reg_nn_test_spins)
