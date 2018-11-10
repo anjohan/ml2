@@ -25,23 +25,27 @@ program logreg
         class(binary_logreg), allocatable :: fitter
 
         real(dp), allocatable :: lambdas(:), momentums(:), learning_rates(:), &
-                                 training_accuracies(:,:,:), &
-                                 test_accuracies(:,:,:), &
-                                 crit_accuracies(:,:,:)
+                                 training_accuracies(:,:,:)[:], &
+                                 test_accuracies(:,:,:)[:], &
+                                 crit_accuracies(:,:,:)[:]
         integer :: num_lambdas, num_momentums, num_learning_rates, i, j, k, iteration
         integer, allocatable :: training_pred(:), test_pred(:), crit_pred(:)
 
-        lambdas = [0.0d0, (10.0d0**i, i = -5,2)]
-        momentums = [(0.2d0*i, i = 0, 5)]
-        learning_rates = [(10.0d0**i, i = -4, 0)]
+        lambdas = [0.0d0, (10.0d0**i, i = -5,-4)]
+        momentums = [(0.2d0*i, i = 0, 1)]
+        learning_rates = [(10.0d0**i, i = -4, -3)]
+        !lambdas = [0.0d0, (10.0d0**i, i = -5,2)]
+        !momentums = [(0.2d0*i, i = 0, 5)]
+        !learning_rates = [(10.0d0**i, i = -4, 0)]
 
         num_lambdas = size(lambdas)
         num_momentums = size(momentums)
         num_learning_rates = size(learning_rates)
 
-        allocate(training_accuracies(num_lambdas, num_learning_rates, num_momentums))
+        allocate(training_accuracies(num_lambdas, num_learning_rates, num_momentums)[*])
+        allocate(test_accuracies(num_lambdas, num_learning_rates, num_momentums)[*])
+        allocate(crit_accuracies(num_lambdas, num_learning_rates, num_momentums)[*])
         training_accuracies(:,:,:) = 0
-        allocate(test_accuracies, crit_accuracies, source=training_accuracies)
 
         allocate(training_pred, mold=y_train)
         allocate(test_pred, mold=y_test)
@@ -71,11 +75,11 @@ program logreg
                     call fitter%predict(X_test, test_pred)
                     call fitter%predict(X_crit, crit_pred)
 
-                    training_accuracies(i,j,k) = count(y_train == training_pred) &
+                    training_accuracies(i,j,k)[1] = count(y_train == training_pred) &
                                                  / (1.0d0*size(y_train))
-                    test_accuracies(i,j,k) = count(y_test == test_pred) &
+                    test_accuracies(i,j,k)[1] = count(y_test == test_pred) &
                                                  / (1.0d0*size(y_test))
-                    crit_accuracies(i,j,k) = count(y_crit == crit_pred) &
+                    crit_accuracies(i,j,k)[1] = count(y_crit == crit_pred) &
                                                  / (1.0d0*size(y_crit))
                     write(*,*) training_accuracies(i,j,k), test_accuracies(i,j,k), &
                                 crit_accuracies(i,j,k)
@@ -83,9 +87,10 @@ program logreg
             end do
         end do
         !!$omp end parallel do
-        call co_sum(training_accuracies)
-        call co_sum(test_accuracies)
-        call co_sum(crit_accuracies)
+        sync all
+        !call co_sum(training_accuracies)
+        !call co_sum(test_accuracies)
+        !call co_sum(crit_accuracies)
 
         if (this_image() == 1) then
         post_analysis: block
