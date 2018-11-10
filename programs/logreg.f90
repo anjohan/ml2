@@ -16,7 +16,7 @@ program logreg
 
     write(*,*) "Using", num_images(), " images"
 
-    call read_2d_states("data/states.bin", "data/labels.bin", &
+    call read_2d_states("data/states_1.bin", "data/labels_1.bin", &
                         X_train, X_test, X_crit, y_train, y_test, y_crit, &
                         test_fraction, add_intercept=.true., T=.true.)
 
@@ -31,12 +31,12 @@ program logreg
         integer :: num_lambdas, num_momentums, num_learning_rates, i, j, k, iteration
         integer, allocatable :: training_pred(:), test_pred(:), crit_pred(:)
 
-        lambdas = [0.0d0, (10.0d0**i, i = -5,-4)]
-        momentums = [(0.2d0*i, i = 0, 1)]
-        learning_rates = [(10.0d0**i, i = -4, -3)]
-        !lambdas = [0.0d0, (10.0d0**i, i = -5,2)]
-        !momentums = [(0.2d0*i, i = 0, 5)]
-        !learning_rates = [(10.0d0**i, i = -4, 0)]
+        !lambdas = [0.0d0, (10.0d0**i, i = -5,-4)]
+        !momentums = [(0.2d0*i, i = 0, 1)]
+        !learning_rates = [(10.0d0**i, i = -4, -3)]
+        lambdas = [0.0d0, (10.0d0**i, i = -5,2)]
+        momentums = [(0.2d0*i, i = 0, 5)]
+        learning_rates = [(10.0d0**i, i = -4, 0)]
 
         num_lambdas = size(lambdas)
         num_momentums = size(momentums)

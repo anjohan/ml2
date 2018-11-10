@@ -86,7 +86,7 @@ program convergence
                     r2 = 1 - sum((pred_energies(1,:) - test_energies(1,:))**2) &
                              / sum((test_energies(1,:) - sum(test_energies(1,:))/num_states)**2)
                     !write(*,*) this_image(),i,j,k,t, r2
-                    call co_max(r2)
+                    !call co_max(r2)
                     if (r2 >= tolerance) then
                         if (elapsed_time < shortest_time) then
                             best_batch_size = batch_sizes(j)

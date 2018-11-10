@@ -52,13 +52,16 @@ program reg_nn_spins
             end do
             r2s(j, i) = 1 - sum((pred(1,:) - test_energies(1,:))**2) &
                       / sum((test_energies(1,:) - sum(test_energies(1,:))/num_states)**2)
+            if (this_image() == 1) write(*,*) j, r2s(j,i)
         end do
     end do
 
-    open(newunit=u, file="data/reg_nn_test_spins.dat", status="replace")
-    do i = 1, num_epochs
-        write(u, *) i, r2s(i, :)
-    end do
-    close(u)
+    if (this_image() == 1) then
+        open(newunit=u, file="data/reg_nn_test_spins.dat", status="replace")
+        do i = 1, num_epochs
+            write(u, *) i, r2s(i, :)
+        end do
+        close(u)
+    end if
 
 end program

@@ -42,10 +42,10 @@ data/states.pkl:
 data/labels.pkl:
 	wget https://physics.bu.edu/~pankajm/ML-Review-Datasets/isingMC/Ising2DFM_reSample_L40_T=All_labels.pkl -O $@
 
-data/states.bin: programs/pkl2bin.py data/labels.pkl data/states.pkl
-	python $<
+data/states_%.bin: programs/pkl2bin.py data/labels.pkl data/states.pkl
+	python $< $*
 
-data/logreg_table.dat: build/logreg programs/logreg.f90 build
+data/logreg_table.dat: build/logreg programs/logreg.f90 build data/states_1.bin
 	mpirun ./$<
 
 data/reg_nn_convergence.dat: build/reg_nn_convergence

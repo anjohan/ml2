@@ -50,6 +50,7 @@ module mod_find_r2s
                 end do
                 r2s(i) = 1 - sum((pred_energies(1,:) - test_energies(1,:))**2) &
                          / sum((test_energies(1,:) - sum(test_energies(1,:))/num_states)**2)
+                if (this_image() == 1) write(*,*) i, r2s(i)
             end do
 
             if (this_image() == 1) then
