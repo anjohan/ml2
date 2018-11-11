@@ -47,9 +47,9 @@ program convergence
         test_energies = energies(:,num_states+1:)
         energies = energies(:,:num_states)
 
-        lambdas = [0.0d0, (10.0d0**i, i = -5, 1,2)]
+        lambdas = [0.0d0, (10.0d0**i, i = -5, 0,1)]
         num_lambdas = size(lambdas)
-        batch_sizes = [1,4,12,16,20,40,100] !,200,500,1000]
+        batch_sizes = [1,4,8,12,16,20,40,100] !,200,500,1000]
         num_batch_sizes = size(batch_sizes)
         learning_rates = [(10.0d0**i, 5*10.0d0**i, i = -5, -1, 1)]
         num_learning_rates = size(learning_rates)

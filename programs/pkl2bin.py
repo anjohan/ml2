@@ -18,7 +18,7 @@ if len(sys.argv) == 2:
 num_ordered = 70000 / skip
 num_critical = 30000 / skip
 num_disordered = 60000 / skip
-num_spins = 1600 / skip
+num_spins = 1600
 
 print(np.sum(data[:10, :] == -1, axis=1))
 

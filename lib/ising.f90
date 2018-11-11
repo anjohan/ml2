@@ -74,6 +74,16 @@ module mod_ising
             call shuffle(X_noncrit, y_noncrit, column_wise=.true.)
             call shuffle(X_crit, y_crit, column_wise=.true.)
 
+            if (this_image() /= 1) then
+                X_noncrit(:,:) = 0; y_noncrit(:) = 0
+                X_crit(:,:) = 0; y_crit(:) = 0
+            end if
+
+            call co_sum(X_noncrit)
+            call co_sum(y_noncrit)
+            call co_sum(X_crit)
+            call co_sum(y_crit)
+
             N_test = nint(test_fraction*num_noncrit)
 
             X_test = X_noncrit(:,1:N_test)

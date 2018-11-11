@@ -1,5 +1,5 @@
 sources = $(shell find -name "*.f90")
-deps = sources2.bib data/J_ols_1000_1.png data/J_ols_1600_1.png data/J_Ridge_1000_1.png data/J_Ridge_1600_1.png data/J_LASSO_1000_1.png data/J_LASSO_400_1.png data/states.bin data/reg_nn_test_couplings.dat data/J_nn_1.png data/reg_nn_test_spins.dat
+deps = sources2.bib data/J_ols_1000_1.png data/J_ols_1600_1.png data/J_Ridge_1000_1.png data/J_Ridge_1600_1.png data/J_LASSO_1000_1.png data/J_LASSO_400_1.png data/reg_nn_test_couplings.dat data/J_nn_1.png data/reg_nn_test_spins.dat $(foreach skip,1 10,data/states_$(skip).bin)
 
 .PRECIOUS: *.dat
 

@@ -171,6 +171,12 @@
     Using \(\num{400}\) training samples requires \(\lambda\in\qty[10^{-3},10^{-2}]\), while \(\num{1000}\) allows for smaller values of \(\lambda\).
     The largest viable \(\lambda\) is \(10^{-1}\) in both cases, after which the performance decreases rapidly.
     Visualisation of the coupling matrices shows LASSO being able to break the symmetry and return the correct model, while Ridge returns a symmetric coupling matrix.
+    A neural network with no hidden layers taking in couplings, in practice a linear regressor with stochastic batch gradient descent, also returns a symmetric coupling matrix.
+    With a learning rate of \(\num{0.04}\), the neural network converges to give an \(R^2\) score of \(1\) after \(10\) epochs.
+    On a \(4\)-core processor a batch size of \(12\) is found to minimise the training time.
+    Additionally, a neural network with only one hidden layer is able to predict energies with an \(R^2\) score of more than \(\num{0.98}\) when only fed the spins and not the couplings.
+
+
 \end{abstract}
 
 \tableofcontents
@@ -382,8 +388,9 @@ and the rectified linear unit (RELU),
 \begin{equation}
     f(z) = \begin{cases}z, & z \geq 0 \\ 0, & z < 0 \end{cases}
     \implies
-    f'(z) = \begin{cases}1, & z \geq 0 \\ 0, & z < 0 \end{cases} .
+    f'(z) = \begin{cases}1, & z \geq 0 \\ 0, & z < 0 \end{cases}.
 \end{equation}
+The rectified linear unit usually performs the best\cite{mehta} and is used throughout this project (except in the output layer for classification).
 
 \subsubsection{Cost functions and output layers}
 When applying a neural network to regression problems, the natural choice of cost function is simply the squared deviation from the known outputs,
@@ -425,6 +432,7 @@ As in the previous project, I have chosen to use an object-oriented approach and
 
 The most important class is the \lstinline{neural_network} class. This contains methods for training, prediction and back propagation, which call corresponding methods on each element in the network's array of \lstinline{layer} objects. Each \lstinline{layer} has a weight matrix, a bias vector, some temporary output and input vectors, and an \lstinline{activation_function} object. Sublasses of \lstinline{activation_function} have been implemented for both the sigmoid function and the rectifying linear unit. These implement a method for evaluation and differentiation. Giving the last \lstinline{layer} instances of different \lstinline{activation_function} subclasses tailors the neural network to either classification or regression.
 
+Coarrays, introduced in Fortran2008, were used to parallelise the neural network. Each batch in the stochastic batch gradient descent is divided among the available processes. When all processes have finished with their given amount of work, the resulting gradients are summed and used to update the weights. Synchronisation therefore only takes place between each batch. For large batch sizes, the speedup of parallelisation should be almost perfect.
 
 
 %      _             _               _   _
@@ -632,7 +640,7 @@ If the same input is used as in~\vref{subsec:linregresults}, the weight matrix o
             \addlegendentry{\(\alpha=\num{0.04}\)};
         \end{axis}
     \end{tikzpicture}
-    \caption{\(R^2\) score on training data as a function of the number of epochs, i.e.\ the number of stochastic gradient descent iterations. \(\num{3000}\) states were used for training with a batch size of \(300\). With the right learning rate, the neural network converges quickly to the correct solution, while a badly chosen learning rate leads to slower convergence or even divergence. A learning rate of \(\num{0.05}\) ruins everything (not shown).}\label{fig:r2nn}
+    \caption{\(R^2\) score on test data as a function of the number of epochs, i.e.\ the number of stochastic gradient descent iterations. \(\num{3000}\) states were used for training with a batch size of \(300\). With the right learning rate, the neural network converges quickly to the correct solution, while a badly chosen learning rate leads to slower convergence or even divergence. A learning rate of \(\num{0.05}\) ruins everything (not shown).}\label{fig:r2nn}
 \end{figure}
 
 \begin{figure}[H]
@@ -643,7 +651,7 @@ If the same input is used as in~\vref{subsec:linregresults}, the weight matrix o
 
 \begin{table}[H]
     \centering
-    \caption{Optimal combination of learning rate and batch size for a few different values of \(\lambda\). The given numbers of epochs and training time are determined by registering when the neural network gives \(R^2\geq \num{0.98}\) on test data. Optimal parameters are defined as the parameters which give the shortest \emph{training time}. A batch size of \(1\) always gives the smallest number of required epochs, but does not utilise the parallelisation of the neural network. These results are generated on a \(4\)-core processor. Using more cores would lead to a larger optimal batch size. A suitable choice of regularisation parameter is seen to reduce training time and the required number of epochs, while too strong regularisation keeps the neural network from converging sufficiently.}
+    \caption{Optimal combination of learning rate and batch size for a few different values of \(\lambda\). The given numbers of epochs and training time are determined by registering when the neural network gives \(R^2\geq \num{0.98}\) on test data. Optimal parameters are defined as the parameters which give the shortest \emph{training time}. A batch size of \(1\) always gives the smallest number of required epochs, but does not utilise the parallelisation of the neural network. These results are generated on a \(4\)-core processor. Using more cores would lead to a larger optimal batch size. A suitable choice of regularisation parameter is occasionally seen to reduce training time and the required number of epochs, while too strong regularisation keeps the neural network from converging sufficiently.}
     \pgfplotstabletypeset[
         columns/lambda/.style={column name={$\lambda$},
             dec sep align,
@@ -662,7 +670,7 @@ If the same input is used as in~\vref{subsec:linregresults}, the weight matrix o
 \subsubsection{Energy from a black body}
 The previous exercise did not use the full power of neural networks, i.e.\ their ability to take in some input, e.g.\ a spin system, and spit out some output, e.g.\ energy, without any knowledge of how the output should depend on the input --- a ``black box''-behaviour. Instead, the neural network was turned into a linear regression machine because it was told to apply an affine transformation to fit data which was known to be linear.
 
-It is therefore interesting to see whether the neural network can predict energies when it is just given the spin configuration and no other knowledge. Since the energy has a non-linear dependence on the spins, this requires more than one layer. As seen in~\vref{fig:r2nnspin}, a modest neural network (with three hidden layers of \(50\) neurons each) achieves an \(R^2\) score above \(\num{0.9}\).
+It is therefore interesting to see whether the neural network can predict energies when it is just given the spin configuration and no other knowledge. Since the energy has a non-linear dependence on the spins, this requires more than one layer. As seen in~\vref{fig:r2nnspin}, a modest neural network with one hidden layer with \(\num{400}\) neurons achieves an \(R^2\) score above \(\num{0.98}\). Increasing the number of layers does not contribute significantly, since the energy is a linear combination of products of spins, requiring a total of two layers.
 
 \begin{figure}[H]
     \centering
@@ -670,7 +678,7 @@ It is therefore interesting to see whether the neural network can predict energi
         \begin{axis}[
             thick,
             width=6in, height=3in,
-            legend style={draw=none, fill=none, at={(0.02,0.98)}, anchor=north west},
+            legend style={draw=none, fill=none, at={(0.98,0.02)}, anchor=south east},
             legend cell align=left,
             xmode=log,
             xlabel={epochs},
@@ -684,12 +692,49 @@ It is therefore interesting to see whether the neural network can predict energi
             \addlegendentry{\(\alpha=\num{0.04}\)};
         \end{axis}
     \end{tikzpicture}
-    \caption{\(R^2\) score on training data as a function of the number of epochs, i.e.\ the number of stochastic gradient descent iterations. \(\num{10000}\) states were used for training with a batch size of \(32\), \(\lambda=\num{0.001}\) and \(L=40\). The neural network consists of three hidden layers with \(50\) neurons each. While a learning rate of \(\num{0.04}\) initially converges the fastest, a smaller learning rate results in a better final \(R^2\) score. An adaptive scheme may therefore perform better.}\label{fig:r2nnspin}
+    \caption{\(R^2\) score on training data as a function of the number of epochs, i.e.\ the number of stochastic gradient descent iterations. \(\num{10000}\) states were used for training with a batch size of \(20\), \(\lambda=\num{0.001}\) and \(L=40\). The neural network consists of one hidden layer with \(400\) neurons. While a learning rate of \(\num{0.04}\) initially converges the fastest, a smaller learning rate results in a better final \(R^2\) score. An adaptive scheme may therefore perform better.}\label{fig:r2nnspin}
 \end{figure}
 
 \subsection{Neural network classification}
 The logistic regression in~\vref{subsec:logreg} showed mediocre performance, never achieving an accuracy above approximately \(\SI{70}{\percent}\). A neural network, with its series of affine transformations and activation functions, has a much more complex approximating function, more degrees of freedom and therefore a better chance of reaching a near-perfect predicting performance.
 
+\Vref*{fig:nnclass} shows that this is indeed the case. Whereas logistic regression required all \(\num{130000}\) spin configurations to reach an accuracy of \(\SI{70}{\percent}\), simple neural networks converge to perfect accuracy on test data within few epochs when using one tenth of the spin configurations. In addition to the improved accuracy, this means that the neural networks are more efficient despite their higher complexity, because they need less data and fewer epochs.
+
+Interestingly, a deeper neural network does not seem to converge in fewer epochs. This may be due to the fact that the order/disorder in a lattice configuration only depends on quantities like the magnetisation, which is a first order polynomials of the spins (the sum), and the energy, which is a second order polynomial. A second order approximation only requires one hidden layer, since both the hidden and the output layer apply an affine transformation.
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}
+        \begin{axis}[
+            thick,
+            width=6in, height=3in,
+            legend style={draw=none, fill=none, at={(0.98,0.02)}, anchor=south east},
+            legend cell align=left,
+            xmode=log,
+            xlabel={epochs},
+            ylabel={\(R^2\) score},
+        ]
+            \addplot+ table[y index=1] {data/class_test.dat};
+            \addlegendentry{\(\alpha=\num{0.001}\), \(10\) neurons};
+            \addplot+ table[y index=2] {data/class_test.dat};
+            \addlegendentry{\(\alpha=\num{0.001}\),  \(10\times10\) neurons};
+            \addplot+ table[y index=3] {data/class_test.dat};
+            \addlegendentry{\(\alpha=\num{0.001}\), \(100\) neurons};
+            \addplot+ table[y index=4] {data/class_test.dat};
+            \addlegendentry{\(\alpha=\num{0.01}\), \(10\) neurons};
+            \addplot+ table[y index=5] {data/class_test.dat};
+            \addlegendentry{\(\alpha=\num{0.01}\),  \(10\times10\) neurons};
+            \addplot+ table[y index=6] {data/class_test.dat};
+            \addlegendentry{\(\alpha=\num{0.01}\), \(100\) neurons};
+        \end{axis}
+    \end{tikzpicture}
+    \caption{Accuracy on test data as a function of the number of epochs for a few neural network architectures and two different learning rates with batch size \(20\) and \(\lambda=\num{0.001}\). Only one tenth of the data provided by Mehta et.\ al.\cite{mehta} was used. This amount of data rendered logistic regression useless, while the neural networks quickly converge to perfect accuracy with as little as one hidden layer with \(10\) neurons.}\label{fig:nnclass}
+\end{figure}
+
+
+\clearpage
+\nocite{*}
+\printbibliography{}
+\addcontentsline{toc}{section}{\bibname}
 %                                   _ _
 %   __ _ _ __  _ __   ___ _ __   __| (_)_  __
 %  / _` | '_ \| '_ \ / _ \ '_ \ / _` | \ \/ /
@@ -1058,9 +1103,4 @@ A more computationally practical expression could have been derived by adding an
 by manipulations analogous to the ones used above. This is another formulation of the bias-variance decomposition which can be used without any information about the underlying model. Dividing by \(N\) gives the average \(\MSE\) on the left-hand side.
 
 
-
-\clearpage
-\nocite{*}
-\printbibliography{}
-\addcontentsline{toc}{section}{\bibname}
 \end{document}

@@ -41,12 +41,12 @@ program reg_nn_spins
     learning_rates = [0.001d0, 0.01d0, 0.04d0]
     allocate(r2s(num_epochs, size(learning_rates)))
 
-    nn = neural_network(L, [50,50,50,1], relu(), lambda=0.001d0)
+    nn = neural_network(L, [400,1], relu(), lambda=0.001d0)
     do i = 1, size(learning_rates)
         call nn%reset_weights()
         do j = 1, num_epochs
             write(*,*) i, j
-            call nn%train(spins, energies, learning_rates(i), 1, 32)
+            call nn%train(spins, energies, learning_rates(i), 1, 20)
             do k = 1, num_states
                 call nn%predict(test_spins(:, k), pred(:, k))
             end do
