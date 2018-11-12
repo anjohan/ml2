@@ -17,7 +17,7 @@ program linreg
     real(dp) :: mse, r2
     character(len=1024) :: str
 
-    num_bootstraps = 20
+    num_bootstraps = 40
     L = 40
 
     read(*,*) num_states

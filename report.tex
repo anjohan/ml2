@@ -157,10 +157,6 @@
 \end{titlepage}
 \null
 \pagestyle{empty}
-\newpage
-
-\pagestyle{fancy}
-\setcounter{page}{1}
 
 \begin{abstract}
     This project applies several statistical learning methods to data from the famous Ising model.
@@ -170,24 +166,31 @@
     LASSO regression is found to perfectly reproduce the Ising model and give an \(R^2\) score of \(1\) for the correct choice of regularisation.
     Using \(\num{400}\) training samples requires \(\lambda\in\qty[10^{-3},10^{-2}]\), while \(\num{1000}\) allows for smaller values of \(\lambda\).
     The largest viable \(\lambda\) is \(10^{-1}\) in both cases, after which the performance decreases rapidly.
-    Visualisation of the coupling matrices shows LASSO being able to break the symmetry and return the correct model, while Ridge returns a symmetric coupling matrix.
+    Visualisation of the coupling matrices shows LASSO being able to break the symmetry and return the original model, while Ridge returns a symmetric coupling matrix.
+    Given enough training data, Ridge regression achieves the same performance.
+
     A neural network with no hidden layers taking in couplings, in practice a linear regressor with stochastic batch gradient descent, also returns a symmetric coupling matrix.
     With a learning rate of \(\num{0.04}\), the neural network converges to give an \(R^2\) score of \(1\) after \(10\) epochs.
     On a \(4\)-core processor a batch size of \(12\) is found to minimise the training time.
     Additionally, a neural network with only one hidden layer is able to predict energies with an \(R^2\) score of more than \(\num{0.98}\) when only fed the spins and not the couplings.
 
-
+    Logistic regression is able to classify spin configurations as ordered/disordered with an accuracy of approximately \(\SI{70}{\percent}\), while a neural network with one hidden layer with \(\num{400}\) neurons achieves perfect accuracy within \(10\) epochs. Consequently, neural networks proved to be superior, although the choice of hyperparameters, especially the learning rate, was crucial.
 \end{abstract}
+\clearpage
+
+\thispagestyle{fancy}
+\pagestyle{fancy}
+\setcounter{page}{1}
 
 \tableofcontents
 
 \section{Introduction}
 The Ising model is famous in many fields of science.
-Physicists study the model because it represents a magnetic lattice and can model ferromagnetic materials, and also because it has a large university class and has the same behaviour as many other models.
+Physicists study the model because it represents a magnetic lattice and can model ferromagnetic materials, and also because it has a large university class and therefore the same behaviour as many other models.
 Social scientists like the model because it is a simple correlated system, which can approximate correlated quantities such as dialects.
 The Metropolis algorithm, acknowledged as one of the premiere algorithms in computational science, is a method for finding the properties of the Ising model numerically.
 
-This project does not deal with the simulation of a spin lattice, but rather the classification and analysis of pre-calculated spin configurations with corresponding energies.
+This project does not deal with the simulation of a spin lattice, but rather the classification and analysis of pre-calculated spin configurations with corresponding energies and labels as ordered or disordered.
 Thus the Ising model can be used to verify various numerical methods for both regression and classification, and also measure their performance to infer their relative strengths and weaknesses.
 
 The main goal is to compare simple neural networks with the different linear regression methods for regression and logistic regression for classification.
@@ -300,7 +303,7 @@ or, in matrix form,
     \nabla_{\vec{\beta}} Q = X^T \qty(\vec{p} - \vec{y}),
 \end{equation}
 with \(\vec{p} = 1/\qty(1+\exp{-X\vec{\beta}})\).
-The equation \(\nabla Q = \vec{0}\) does not have an analytic solution, but it can be minimised with the standard minimisation methods.
+The equation \(\nabla Q = \vec{0}\) does not have an analytic solution, but the cost function can be minimised with the standard minimisation methods.
 
 \subsubsection{Regularisation}
 As with linear regression, a logistic regressor can be regularised by adding a term to the cost function in the hope of reducing variance and overfitting.
@@ -324,7 +327,7 @@ Neural networks can be used for both classification and regression.
 They aim to be more accurate than linear and logistic regression by using a more complex set of functions for approximation.
 A neural network is a series of affine transformations and activation functions, where the activation function may for example be a logistic function.
 
-Each pair of one affine transformation and activation function is called a \emph{layer}. The number of outputs from a layer is called the number of \emph{neurons} in the layer. Mathematically, layer number \(l\) contains a weight-matrix \(W^l\), a bias vector \(\vec{b}^l\) and an activation function \(f^l\), takes input \(\vec{a}^{l-1}\), applies the affine transformation \(\vec{z}^l = W^l \vec{a}^{l-1} + \vec{b}^l\) and returns the output \(f^l(\vec{z}^l)\).
+Each pair of one affine transformation and one activation function is called a \emph{layer}. The number of outputs from a layer is called the number of \emph{neurons} in the layer. Mathematically, layer number \(l\) contains a weight-matrix \(W^l\), a bias vector \(\vec{b}^l\) and an activation function \(f^l\), takes input \(\vec{a}^{l-1}\), applies the affine transformation \(\vec{z}^l = W^l \vec{a}^{l-1} + \vec{b}^l\) and returns the output \(f^l(\vec{z}^l)\).
 
 Prediction is done recursively. The first layer, called the input layer, applies its affine transformation to the input vector and then its activation function. The second layer receives the output of the first layer and repeats the process. This is repeated up to and including the final (output) layer, whose activation function is tailored to either classification or regression.
 
@@ -344,14 +347,13 @@ Applying the chain rule again, \(\delta_j^l\) is rewritten as
     \delta_j^l = \pdv{Q}{z_j^l} = \pdv{Q}{a_k^l}\pdv{a_k^l}{z_j^l} = \pdv{Q}{a_k^l}\pdv{f^l\qty(z_k^l)}{z_j^l}
                = \pdv{Q}{a_j^l}\pdv{f^l}{z_j^l}.
 \end{equation}
-When doing regression, \(f^L\) will usually be the identity, giving \(1\) as the last partial derivative. This is not the case in classification, nor in the earlier layers.
-
+%When doing regression, \(f^L\) will usually be the identity, giving \(1\) as the last partial derivative. This is not the case in classification, nor in the earlier layers.
 Additionally, the derivatives with respect to the weight matrix elements are
 \begin{equation}
     \pdv{Q}{W_{jk}^l} = \pdv{Q}{z_i^l}\pdv{z_i^l}{W_{jk}^l} = \delta_i^l \pdv{W_{jk}^l}\qty(W_{im}^l a_m^{l-1} + b_i^l)
                       = \delta_j^l a_k^{l-1}.
 \end{equation}
-These equations can be combined to give the derivatives of the cost function with respect to the weights and biases at the last layer, but does not say anything about the gradients at earlier layers, which would require knowledge of \(\delta_j^l\) for \(l<L\).
+These equations can be combined to give the derivatives of the cost function with respect to the weights and biases at the last layer, but do not say anything about the gradients at earlier layers, which would require knowledge of \(\delta_j^l\) for \(l<L\).
 This relation can be derived through one final application of the chain rule,
 \begin{equation}
     \delta_j^l = \pdv{Q}{z_j^l} = \pdv{Q}{z_k^{l+1}}\pdv{z_k^{l+1}}{z_j^l}
@@ -410,7 +412,7 @@ and
     \vec{\delta}^{\,L} = \vec{a}^L - \vec{y}.
 \end{equation}
 
-Binary classification problems such as the one of the two-dimensional Ising model may use the same cost function as that of logistic regression,with the logistic function used as the activation function of the output layer in order to obtain a probability \(a^L\) between zero and one.
+Binary classification problems such as the one of the two-dimensional Ising model may use the same cost function as that of logistic regression, with the logistic function used as the activation function of the output layer in order to obtain a probability \(a^L\) between zero and one.
 The cost function is then
 \begin{equation}
     Q = -\qty(y\ln(a^L) + (1 - y)\ln(1-a^L))
@@ -430,7 +432,7 @@ giving
 \subsubsection{Implementation}
 As in the previous project, I have chosen to use an object-oriented approach and Fortran. This combination resulted in general, easy-to-use and efficient code for regression methods. The neural network is therefore similarly organised.
 
-The most important class is the \lstinline{neural_network} class. This contains methods for training, prediction and back propagation, which call corresponding methods on each element in the network's array of \lstinline{layer} objects. Each \lstinline{layer} has a weight matrix, a bias vector, some temporary output and input vectors, and an \lstinline{activation_function} object. Sublasses of \lstinline{activation_function} have been implemented for both the sigmoid function and the rectifying linear unit. These implement a method for evaluation and differentiation. Giving the last \lstinline{layer} instances of different \lstinline{activation_function} subclasses tailors the neural network to either classification or regression.
+The most important class is the \lstinline{neural_network} class. This contains methods for training, prediction and back propagation, which call corresponding methods on each element in the network's array of \lstinline{layer} objects. Each \lstinline{layer} has a weight matrix, a bias vector, some temporary output and input vectors, and an \lstinline{activation_function} object. Subclasses of \lstinline{activation_function} have been implemented for both the sigmoid function and the rectifying linear unit. These implement a method for evaluation and differentiation. Giving the last \lstinline{layer} instances of different \lstinline{activation_function} subclasses tailors the neural network to either classification or regression.
 
 Coarrays, introduced in Fortran2008, were used to parallelise the neural network. Each batch in the stochastic batch gradient descent is divided among the available processes. When all processes have finished with their given amount of work, the resulting gradients are summed and used to update the weights. Synchronisation therefore only takes place between each batch. For large batch sizes, the speedup of parallelisation should be almost perfect.
 
@@ -456,8 +458,8 @@ where \(Q\qty(X_{\qty[\vec{\imath},:]},\vec{y}_{\vec{\imath}})\) denotes the gra
 
 A further improvement is to add a so-called momentum, i.e.\ use a linear combination of the current and previous gradient rather than just using the current gradient,
 \begin{equation}
-    \vec{v}_{k} = \gamma \vec{v}_{k-1} + \alpha Q\qty(X_{\qty[\vec{\imath},:]},\vec{y}_{\vec{\imath}}), \qquad
-    \vec{\beta}_{k+1} = \vec{\beta}_k - \vec{v}_k.
+    \vec{v}_{k} = \gamma \vec{v}_{k-1} + Q\qty(X_{\qty[\vec{\imath},:]},\vec{y}_{\vec{\imath}}), \qquad
+    \vec{\beta}_{k+1} = \vec{\beta}_k - \alpha\vec{v}_k.
 \end{equation}
 
 %                      _ _
@@ -475,7 +477,7 @@ While the energy is generated from \(E=-\sum_j J_{j,j+1}s_j s_{j+1}\), any matri
 Widely different behaviours are seen for the three regression algorithms.
 Ordinary least squares gives strange results, while Ridge and LASSO regression give good, but different, results.
 Ridge regression, whose cost function includes the sum of the squares of the coefficients \(\beta_j\), gives a symmetric coupling matrix because \(\num{0.5}^2+\num{0.5}^2\) is the smallest squared sum of two numbers which add up to one.
-The resulting performance is an \(R^2\) score around \(\num{0.8}\) when \(\lambda\) is not chosen too large.
+The resulting performance is an \(R^2\) score around \(\num{0.8}\) with \(\num{1000}\) training samples when \(\lambda\) is not chosen too large.
 
 On the other hand, LASSO regression is able to perfectly reproduce the asymmetric coupling matrix used to generate the data with the correct choice of regularisation parameter, resulting in an \(R^2\) score of \(1\). Using more training samples reduces the sensitivity to \(\lambda\), while the peak performance is the same for \(\num{400}\) and \(\num{1000}\) samples.
 
@@ -505,7 +507,7 @@ Coupling matrices showing transitions and other interesting features are shown b
             \addlegendentry{LASSO, \(\num{1000}\) states};
         \end{axis}
     \end{tikzpicture}
-    \caption{\(R^2\) score on test data. While the regularisation of Ridge regression does not significantly improve the performance, as illustrated by the constant coupling matrices in~\vref{fig:coupling}, the correct choice of regularisation parameter enables LASSO to give perfect predictive ability. This corresponds well with the coupling matrices shown in~\ref{fig:coupling} and onwards, which show that LASSO regularisation gives the same, asymmetric coupling matrices as those of the underlying model.}\label{fig:r2}
+    \caption{\(R^2\) score on test data. While the regularisation of Ridge regression does not significantly improve the performance, as illustrated by the constant coupling matrices in~\vref{fig:coupling}, the correct choice of regularisation parameter gives LASSO perfect predictive ability. This corresponds well with the coupling matrices shown in~\ref{fig:coupling} and onwards, which show that LASSO regularisation gives the same, asymmetric coupling matrices as those of the underlying model.}\label{fig:r2}
 \end{figure}
 
 \begin{figure}[H]
@@ -526,12 +528,12 @@ Coupling matrices showing transitions and other interesting features are shown b
             \addlegendentry{Bias (Ridge, \(\num{1000}\) states)};
             \addplot+ table[y index=4] {data/mse_Ridge_1000.dat};
             \addlegendentry{Variance (Ridge, \(\num{1000}\) states)};
-            \addplot+ table[y index=2] {data/mse_Ridge_1600.dat};
-            \addlegendentry{MSE (Ridge, \(\num{1600}\) states)};
-            \addplot+ table[y index=3] {data/mse_Ridge_1600.dat};
-            \addlegendentry{Bias (Ridge, \(\num{1600}\) states)};
-            \addplot+ table[y index=4] {data/mse_Ridge_1600.dat};
-            \addlegendentry{Variance (Ridge, \(\num{1600}\) states)};
+            %\addplot+ table[y index=2] {data/mse_Ridge_1600.dat};
+            %\addlegendentry{MSE (Ridge, \(\num{1600}\) states)};
+            %\addplot+ table[y index=3] {data/mse_Ridge_1600.dat};
+            %\addlegendentry{Bias (Ridge, \(\num{1600}\) states)};
+            %\addplot+ table[y index=4] {data/mse_Ridge_1600.dat};
+            %\addlegendentry{Variance (Ridge, \(\num{1600}\) states)};
             \addplot+ table[y index=2] {data/mse_LASSO_400.dat};
             \addlegendentry{MSE (LASSO, \(\num{400}\) states)};
             \addplot+ table[y index=3] {data/mse_LASSO_400.dat};
@@ -595,10 +597,10 @@ for line in io.lines("data/Ridge_lambdas.dat") do
 end
 \end{luacode*}
 
-\subsection{Logistic regression}
+\subsection{Logistic regression}\label{subsec:logregresults}
 Mehta et.\ al.\cite{mehta} have provided a data set with \(\num{160000}\) spin configurations on a \(40\times40\) lattice. The states are labelled as ordered or disordered. Of these, \(\num{30000}\) are considered \emph{critical}, i.e.\ in the range between ordered and disordered (this phase transition is sharp only in the limit of infinite lattice size). The non-critical states were divided into training and test data, while the critical states were kept as an extra test set.
 
-There are many parameters to be chosen in logistic regression. I chose to vary regularisation, learning rate and momentum to determine the optimal combination of parameters. The batch size could also have been varied, but this was kept fixed for simplicity and reduction of runtime. Additionally, the batch size only determines the rate of convergence, while wrong choices for the other parameters often lead to no convergence at all. For each \(\lambda\), an optimal learning rate and momentum was determined through a (parallel) parameter sweep.
+There are many parameters to be chosen in logistic regression. I chose to vary regularisation, learning rate and momentum to determine the optimal combination of parameters. The batch size could also have been varied, but this was kept fixed for simplicity and reduction of runtime. Additionally, the batch size mainly determines the rate of convergence, while wrong choices for the other parameters often lead to no convergence at all. For each \(\lambda\), an optimal learning rate and momentum was determined through a (parallel) parameter sweep.
 
 \begin{table}[H]
     \centering
@@ -651,7 +653,7 @@ If the same input is used as in~\vref{subsec:linregresults}, the weight matrix o
 
 \begin{table}[H]
     \centering
-    \caption{Optimal combination of learning rate and batch size for a few different values of \(\lambda\). The given numbers of epochs and training time are determined by registering when the neural network gives \(R^2\geq \num{0.98}\) on test data. Optimal parameters are defined as the parameters which give the shortest \emph{training time}. A batch size of \(1\) always gives the smallest number of required epochs, but does not utilise the parallelisation of the neural network. These results are generated on a \(4\)-core processor. Using more cores would lead to a larger optimal batch size. A suitable choice of regularisation parameter is occasionally seen to reduce training time and the required number of epochs, while too strong regularisation keeps the neural network from converging sufficiently.}
+    \caption{Optimal combination of learning rate and batch size for a few different values of \(\lambda\). The given numbers of epochs and training time are determined by registering when the neural network gives \(R^2\geq \num{0.98}\) on test data. Optimal parameters are defined as the parameters which give the shortest \emph{training time}. A batch size of \(1\) always gives the smallest number of required epochs for this simple problem, but does not utilise the parallelisation of the neural network. These results are generated on a \(4\)-core processor. Using more cores would lead to a larger optimal batch size. A suitable choice of regularisation parameter is occasionally seen to reduce training time and the required number of epochs, while too strong regularisation keeps the neural network from converging sufficiently.}
     \pgfplotstabletypeset[
         columns/lambda/.style={column name={$\lambda$},
             dec sep align,
@@ -692,15 +694,15 @@ It is therefore interesting to see whether the neural network can predict energi
             \addlegendentry{\(\alpha=\num{0.04}\)};
         \end{axis}
     \end{tikzpicture}
-    \caption{\(R^2\) score on training data as a function of the number of epochs, i.e.\ the number of stochastic gradient descent iterations. \(\num{10000}\) states were used for training with a batch size of \(20\), \(\lambda=\num{0.001}\) and \(L=40\). The neural network consists of one hidden layer with \(400\) neurons. While a learning rate of \(\num{0.04}\) initially converges the fastest, a smaller learning rate results in a better final \(R^2\) score. An adaptive scheme may therefore perform better.}\label{fig:r2nnspin}
+    \caption{\(R^2\) score on training data as a function of the number of epochs, i.e.\ the number of stochastic gradient descent iterations. \(\num{10000}\) states were used for training with a batch size of \(20\), \(\lambda=\num{0.001}\) and \(L=40\). The neural network consists of one hidden layer with \(400\) neurons. Other simulations, especially when using more layers, show that while a learning rate of \(\num{0.04}\) initially converges the fastest, a smaller learning rate results in a better final \(R^2\) score. An adaptive scheme may therefore perform better.}\label{fig:r2nnspin}
 \end{figure}
 
 \subsection{Neural network classification}
-The logistic regression in~\vref{subsec:logreg} showed mediocre performance, never achieving an accuracy above approximately \(\SI{70}{\percent}\). A neural network, with its series of affine transformations and activation functions, has a much more complex approximating function, more degrees of freedom and therefore a better chance of reaching a near-perfect predicting performance.
+The logistic regression in~\vref{subsec:logregresults} showed mediocre performance, never achieving an accuracy above approximately \(\SI{70}{\percent}\). A neural network, with its series of affine transformations and activation functions, has a much more complex approximating function, more degrees of freedom and therefore a better chance of reaching a near-perfect predicting performance.
 
 \Vref*{fig:nnclass} shows that this is indeed the case. Whereas logistic regression required all \(\num{130000}\) spin configurations to reach an accuracy of \(\SI{70}{\percent}\), simple neural networks converge to perfect accuracy on test data within few epochs when using one tenth of the spin configurations. In addition to the improved accuracy, this means that the neural networks are more efficient despite their higher complexity, because they need less data and fewer epochs.
 
-Interestingly, a deeper neural network does not seem to converge in fewer epochs. This may be due to the fact that the order/disorder in a lattice configuration only depends on quantities like the magnetisation, which is a first order polynomials of the spins (the sum), and the energy, which is a second order polynomial. A second order approximation only requires one hidden layer, since both the hidden and the output layer apply an affine transformation.
+Interestingly, a deeper neural network does not seem to converge in fewer epochs. This may be due to the fact that the order/disorder in a lattice configuration only depends on quantities like the magnetisation, which is a first order polynomial of the spins (the sum), and the energy, which is a second order polynomial. A second order approximation only requires one hidden layer, since both the hidden and the output layer apply an affine transformation.
 \begin{figure}[H]
     \centering
     \begin{tikzpicture}
@@ -711,7 +713,7 @@ Interestingly, a deeper neural network does not seem to converge in fewer epochs
             legend cell align=left,
             xmode=log,
             xlabel={epochs},
-            ylabel={\(R^2\) score},
+            ylabel={accuracy},
         ]
             \addplot+ table[y index=1] {data/class_test.dat};
             \addlegendentry{\(\alpha=\num{0.001}\), \(10\) neurons};
@@ -729,6 +731,29 @@ Interestingly, a deeper neural network does not seem to converge in fewer epochs
     \end{tikzpicture}
     \caption{Accuracy on test data as a function of the number of epochs for a few neural network architectures and two different learning rates with batch size \(20\) and \(\lambda=\num{0.001}\). Only one tenth of the data provided by Mehta et.\ al.\cite{mehta} was used. This amount of data rendered logistic regression useless, while the neural networks quickly converge to perfect accuracy with as little as one hidden layer with \(10\) neurons.}\label{fig:nnclass}
 \end{figure}
+
+%                                                                   _
+%  ___ _   _ _ __ ___  _ __ ___   __ _ _ __ _   _    __ _ _ __   __| |
+% / __| | | | '_ ` _ \| '_ ` _ \ / _` | '__| | | |  / _` | '_ \ / _` |
+% \__ \ |_| | | | | | | | | | | | (_| | |  | |_| | | (_| | | | | (_| |
+% |___/\__,_|_| |_| |_|_| |_| |_|\__,_|_|   \__, |  \__,_|_| |_|\__,_|
+%                       _           _       |___/
+%   ___ ___  _ __   ___| |_   _ ___(_) ___  _ __
+%  / __/ _ \| '_ \ / __| | | | / __| |/ _ \| '_ \
+% | (_| (_) | | | | (__| | |_| \__ \ | (_) | | | |
+%  \___\___/|_| |_|\___|_|\__,_|___/_|\___/|_| |_|
+\section{Summary and conclusion}
+Linear regression, logistic regression and neural networks have been apllied to the Ising model, both as a regression and as a classification problem.
+
+The regression problem was best solved with LASSO regression, which was able to give a perfect \(R^2\) score of \(1\) with as little as \(400\) states --- much less than the number of parameters to be determined. The choice of regularisation parameter was, however, very important to achieve this accuracy. Ridge regression achieved similarly when given sufficient training data, even though it returns a symmetric coupling matrix. LASSO, on the other hand, was the only regression method giving the same coupling matrix as the one used to generate the data.
+
+Neural networks also performed well on the regression problem, and neural networks are the only regression method capable of predicting energies when only given spin configurations and not the spin-spin couplings. An \(R^2\) score above \(\num{0.98}\) was quickly achieved with only one hidden layer. When given couplings and only using an output layer, the neural network was reduced to a linear regressor and performed equally well as Ridge regression, giving the same coupling matrix.
+
+The highest accuracy when classifying spin configurations as orderered or disordered was, by far, achieved by neural networks. Logistic regression failed to reach an accuracy above \(\SI{70}{\percent}\) even when trained on \(\num{100000}\) states, while neural networks achieved perfect accuracy when trained on one tenth of the data.
+
+The conclusion of this project is to use knowledge of the system to choose a specialised method whenever possible, such as in the case of the energy being a linear combination of spin-spin couplings. On the other hand, neural networks proved to be versatile and powerful tools for both classification and regression. They perform well when given the right parameters, which often have to be estimated by a parameter sweep.
+
+Further work is definitely to do larger and more thorough simulations in order to determine the optimal hyperparameters such as batch size and learning rate, as these have proven to be crucial for good performance in neural networks. Additionally, adaptive and more advanced minimisation methods should be implemented, as an adaptive learning rate should be able to combine the fast initial convergence of a large learning rate with the improved precision of a smaller learning rate, thus giving both fast convergence and excellent performance.
 
 
 \clearpage
